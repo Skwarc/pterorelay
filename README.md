@@ -486,6 +486,15 @@ Report vulnerabilities privately; see [SECURITY.md](SECURITY.md).
   access to every server with chat enabled. Chat commands are audited and must
   match the configured broadcast command.
 
+## Built with AI
+
+PteroSync is developed with the help of AI: most of the code, tests and documentation
+were written with [Claude Code](https://claude.com/claude-code) (Anthropic), directed
+and reviewed by the maintainer. Every change goes through the same checks as any
+other: the Python tests, PHPStan and the integration tests against the panel, and a
+run on a real panel before release. Commits written with AI carry a `Co-Authored-By`
+line.
+
 ## License
 
 GNU AGPL v3 or later; see [LICENSE](LICENSE). Contributions: see

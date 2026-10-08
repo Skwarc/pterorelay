@@ -70,8 +70,11 @@ Goal: release PteroSync 1.0 (out of beta) for free on GitHub.
 - [ ] Release assets on GitHub: the `.pteroext` and `pterosync-discord.zip` (built by
   CI from a `v*` tag), the agent bundle and the egg.
 - [x] `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CLA.md`.
-- [ ] CLA Assistant installed on the repository; private vulnerability reporting on;
-  issue templates.
+- [x] Private vulnerability reporting on (GitHub → Security).
+- [ ] **CLA Assistant:** sign in at https://cla-assistant.io with GitHub, create a public
+  gist with the text of `CLA.md`, and link it to `Skwarc/pterosync`. Until then, code pull
+  requests are not asked to accept the CLA; do not merge outside code before it is set up.
+- [ ] Issue templates (bug report with versions and Diagnostics, preset submission).
 - [x] **Compatibility statement** and **privacy note** in the README.
 - [x] Security re-review (2026-10-08). Fixed before publishing: changing the game
   needs Console, turning on the relay or changing its patterns needs console read.
