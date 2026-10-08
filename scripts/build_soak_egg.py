@@ -34,7 +34,9 @@ def install_script() -> str:
     lines = ["#!/bin/bash", "# PteroSync Soak installer: writes the soak scripts.", "set -euo pipefail",
              "mkdir -p /mnt/server", "cd /mnt/server"]
     for name in FILES:
-        encoded = base64.b64encode((SOAK / name).read_bytes()).decode()
+        # Unix line endings whatever the checkout uses (Git for Windows writes CRLF), so the
+        # egg is the same on every machine and the scripts run on Linux.
+        encoded = base64.b64encode((SOAK / name).read_bytes().replace(b"\r\n", b"\n")).decode()
         lines.append(f"echo '{encoded}' | base64 -d > {name}")
     lines.append('echo "Installed the PteroSync soak scripts"')
     return "\n".join(lines) + "\n"
