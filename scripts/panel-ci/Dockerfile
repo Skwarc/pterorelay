@@ -7,4 +7,6 @@ COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 # The test MySQL container uses a self-signed certificate.
 RUN echo "memory_limit=-1" > /usr/local/etc/php/conf.d/memory.ini \
     && mkdir -p /etc/mysql/conf.d && printf '[client]\nskip-ssl\n' > /etc/mysql/conf.d/ci.cnf
+# The mounted checkout belongs to another user in CI; Composer reads its version from git.
+RUN git config --global --add safe.directory '*'
 WORKDIR /panel

@@ -75,9 +75,10 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ github.ref_name }}
         run: |
-          PRERELEASE=$([[ "$TAG" =~ (alpha|beta|rc) ]] && echo --prerelease || true)
+          # Betas are published as normal releases: releases/latest/download/... (the README's
+          # download link) skips pre-releases. The version and the README say it is a beta.
           if gh release view "$TAG" > /dev/null 2>&1; then
             gh release upload "$TAG" release/* --clobber
           else
-            gh release create "$TAG" release/* --title "PteroSync $TAG" --generate-notes --verify-tag $PRERELEASE
+            gh release create "$TAG" release/* --title "PteroSync $TAG" --generate-notes --verify-tag --latest
           fi
