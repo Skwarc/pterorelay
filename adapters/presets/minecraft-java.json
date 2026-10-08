@@ -1,0 +1,55 @@
+{
+  "id": "minecraft-java",
+  "name": "Minecraft: Java Edition",
+  "order": 10,
+  "match": {
+    "eggs": [
+      "paper",
+      "papermc",
+      "purpur",
+      "folia",
+      "spigot",
+      "spigotmc",
+      "bukkit",
+      "craftbukkit",
+      "forge",
+      "neoforge",
+      "fabric",
+      "quilt",
+      "vanilla minecraft",
+      "minecraft java",
+      "mohist",
+      "sponge",
+      "ftb",
+      "feed the beast",
+      "curseforge",
+      "modpack",
+      "technic",
+      "atlauncher"
+    ],
+    "images": []
+  },
+  "notes": "Vanilla, Paper, Spigot, Fabric, Forge and NeoForge, including 26.3's \"System chat:\" labels.",
+  "out": {
+    "template": "tellraw @a {json}",
+    "style": "minecraft_json",
+    "escape": "none",
+    "max_length": 1000
+  },
+  "in": {
+    "strip_ansi": true,
+    "line_prefix": "^(?:\\[[^\\]]*\\]\\s*)+:\\s*(?:System chat:\\s*)?",
+    "patterns": {
+      "chat": "<{player}> {message} || [Not Secure] <{player}> {message}",
+      "join": "^(?P<player>[A-Za-z0-9_.]{1,32})(?: \\(formerly known as [A-Za-z0-9_.]{1,32}\\))? joined the game$",
+      "leave": "^(?P<player>[A-Za-z0-9_.]{1,32}) left the game$",
+      "death": "^(?P<player>[A-Za-z0-9_.]{1,32}) (?P<message>(?:was (?:speared|burned|slain|shot|killed|blown up|pricked|impaled|fireballed|struck|stung|obliterated|poked|skewered|squashed|squished|frozen|burnt|doomed|pummeled|roasted|smashed)|died|drowned|blew up|fell|hit the ground|burned|went up in flames|went off with a bang|walked into|tried to swim in lava|starved|suffocated|froze|withered|experienced kinetic energy|discovered the floor|didn't want to live|left the confines).*)$",
+      "server_ready": "Done ({*})! For help{*}",
+      "broadcast": "^\\[(?P<player>Server|Rcon|[A-Za-z0-9_.]{1,32})\\] (?P<message>.+)$",
+      "advancement": "{player} has made the advancement [{message}] || {player} has completed the challenge [{message}] || {player} has reached the goal [{message}]",
+      "server_stop": "Stopping the server || Stopping server"
+    }
+  },
+  "avatar_url": "https://mc-heads.net/avatar/{player}/64",
+  "status": "verified"
+}

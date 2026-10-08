@@ -1,0 +1,32 @@
+{
+  "id": "minecraft-bedrock",
+  "name": "Minecraft: Bedrock Edition (BDS)",
+  "order": 20,
+  "match": {
+    "eggs": [
+      "bedrock",
+      "bds"
+    ],
+    "images": [
+      "bedrock"
+    ]
+  },
+  "notes": "Bedrock Dedicated Server does not log player chat, so only Discord to game chat, joins and leaves are available.",
+  "out": {
+    "template": "tellraw @a {\"rawtext\":[{\"text\":\"{line}\"}]}",
+    "style": "minecraft_legacy",
+    "escape": "json_string",
+    "max_length": 1000
+  },
+  "in": {
+    "strip_ansi": true,
+    "line_prefix": "^\\[[^\\]]*\\]\\s*",
+    "patterns": {
+      "join": "Player connected: {player}, xuid:{*}",
+      "leave": "Player disconnected: {player}, xuid:{*}",
+      "server_ready": "Server started.",
+      "server_stop": "Server stop requested. || Quit correctly"
+    }
+  },
+  "status": "likely"
+}

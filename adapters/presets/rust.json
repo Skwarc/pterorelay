@@ -1,0 +1,32 @@
+{
+  "id": "rust",
+  "name": "Rust",
+  "order": 40,
+  "match": {
+    "eggs": [
+      "rust"
+    ],
+    "images": [
+      "games rust"
+    ]
+  },
+  "out": {
+    "template": "say {line}",
+    "style": "unity_rich",
+    "escape": "double_quotes",
+    "max_length": 500,
+    "strip": ";"
+  },
+  "in": {
+    "strip_ansi": true,
+    "patterns": {
+      "chat": "^\\[CHAT\\] (?P<player>.{1,64}?)\\[\\d+\\] : (?P<message>.+)$",
+      "join": "^\\S+/\\d+/(?P<player>.{1,64}) joined \\[",
+      "leave": "^\\S+/\\d+/(?P<player>.{1,64}) disconnecting:",
+      "server_ready": "Server startup complete",
+      "broadcast": "[CHAT] SERVER : {message}"
+    }
+  },
+  "status": "likely",
+  "notes": "On Pterodactyl the Rust console shows the server's RCON stream, which includes chat, joins and leaves."
+}

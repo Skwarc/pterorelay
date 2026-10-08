@@ -1,0 +1,19 @@
+{
+  "id": "generic",
+  "name": "Custom (any game)",
+  "order": 1000,
+  "notes": "Define your own broadcast command and console patterns.",
+  "out": {
+    "template": "say {line}",
+    "style": "plain",
+    "escape": "none",
+    "max_length": 256,
+    "strip": ";"
+  },
+  "in": {
+    "strip_ansi": true,
+    "patterns": {},
+    "line_prefix": "auto"
+  },
+  "status": "unverified"
+}

@@ -1,0 +1,18 @@
+{
+  "format": "pterosync-game",
+  "version": 1,
+  "name": "Minecraft Java – with /me emotes",
+  "description": "The built-in Minecraft Java preset plus /me emotes, which the server logs as \"* Name action\". The emote is posted in Discord as a chat message from that player.",
+  "author": "PteroSync contributors",
+  "status": "likely",
+  "game": "minecraft-java",
+  "overrides": {
+    "in": {
+      "patterns": {
+        "chat": "<{player}> {message} || [Not Secure] <{player}> {message} || * {player} {message} || [Not Secure] * {player} {message}"
+      }
+    }
+  },
+  "event_colors": null,
+  "disabled_features": []
+}

@@ -1,0 +1,18 @@
+{
+  "format": "pterosync-game",
+  "version": 1,
+  "name": "Terraria – TShock 5",
+  "description": "For TShock 5.x, which logs chat as \"Name: message\" instead of \"<Name> message\". Other console lines that look like \"Word: text\" (for example some plugin or error output) can also be posted as chat; add them to the ignore list if you see them. TShock 6 and vanilla servers should use the built-in Terraria preset.",
+  "author": "PteroSync contributors",
+  "status": "likely",
+  "game": "terraria",
+  "overrides": {
+    "in": {
+      "patterns": {
+        "chat": "{player}: {message}"
+      }
+    }
+  },
+  "event_colors": null,
+  "disabled_features": []
+}

@@ -1,0 +1,11 @@
+.git
+.gitignore
+.env
+.env.pterosync
+.env.example
+data
+tests
+venv
+__pycache__
+*.pyc
+*.pteroext*

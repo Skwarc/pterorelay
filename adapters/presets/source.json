@@ -1,0 +1,45 @@
+{
+  "id": "source",
+  "name": "Source engine (srcds: CS, TF2, GMod, L4D)",
+  "order": 50,
+  "match": {
+    "eggs": [
+      "counter strike",
+      "cs2",
+      "csgo",
+      "cs go",
+      "garry",
+      "garrys mod",
+      "gmod",
+      "team fortress",
+      "tf2",
+      "left 4 dead",
+      "l4d",
+      "l4d2",
+      "srcds"
+    ],
+    "images": [
+      "srcds",
+      "games source"
+    ]
+  },
+  "notes": "Needs logging echoed to the console (log on; sv_logecho 1, the default on CS2). Bots are ignored. Garry's Mod chat may not be logged.",
+  "out": {
+    "template": "say {line}",
+    "style": "plain",
+    "escape": "double_quotes",
+    "max_length": 200,
+    "strip": ";\""
+  },
+  "in": {
+    "strip_ansi": true,
+    "line_prefix": "^(?:L )?\\d{2}/\\d{2}/\\d{4} - \\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?::| -) ",
+    "patterns": {
+      "chat": "^\"(?P<player>.{1,64}?)<\\d+><[^>]*><[^>]*>\" say(?:_team)? \"(?P<message>.*)\"$",
+      "join": "^\"(?P<player>.{1,64}?)<\\d+><(?!BOT>)[^>]*><[^>]*>\" entered the game$",
+      "leave": "^\"(?P<player>.{1,64}?)<\\d+><(?!BOT>)[^>]*><[^>]*>\" disconnected",
+      "broadcast": "^\"Console<0><Console><Console>\" say \"(?P<message>.*)\"$"
+    }
+  },
+  "status": "likely"
+}

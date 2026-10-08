@@ -1,0 +1,32 @@
+services:
+  pterosync-agent:
+    build:
+      context: .
+    pull_policy: build
+    restart: unless-stopped
+    environment:
+      DISCORD_TOKEN: ${DISCORD_TOKEN:?Set DISCORD_TOKEN}
+      PANEL_PUBLIC_URL: ${PANEL_PUBLIC_URL:?Set PANEL_PUBLIC_URL}
+      PTEROSYNC_AGENT_ID: ${PTEROSYNC_AGENT_ID:?Set PTEROSYNC_AGENT_ID}
+      PTEROSYNC_AGENT_SECRET: ${PTEROSYNC_AGENT_SECRET:?Set PTEROSYNC_AGENT_SECRET}
+      DEFAULT_LOCALE: ${DEFAULT_LOCALE:-en}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      API_CONCURRENCY: ${API_CONCURRENCY:-5}
+      CONSOLE_POLL_SECONDS: ${CONSOLE_POLL_SECONDS:-3}
+      CONFIG_FILE: /data/config.json
+    volumes:
+      - pterosync-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; import sys,time; p=Path('/tmp/ptero-bot-health'); sys.exit(0 if p.exists() and time.time()-p.stat().st_mtime < 90 else 1)"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "3"
+
+volumes:
+  pterosync-data:

@@ -1,0 +1,21 @@
+# PHPStan for the extension, run inside the panel checkout (see scripts/panel_check.py).
+# The panel's config supplies its type aliases (JsonValue, ExtensionSettingValue, ...).
+includes:
+    - /panel/phpstan.neon
+
+parameters:
+    level: 6
+    paths!:
+        - /ext/src
+        - /ext/routes
+        - /ext/database
+    bootstrapFiles:
+        - /panel-ci/autoload.php
+    tmpDir: /tmp/phpstan
+    reportUnmatchedIgnoredErrors: false
+    checkImplicitMixed: false
+    type_coverage:
+        return: 0
+        param: 0
+        property: 0
+        constant: 0

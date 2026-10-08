@@ -1,0 +1,36 @@
+{
+  "id": "terraria",
+  "name": "Terraria (vanilla / TShock)",
+  "order": 30,
+  "match": {
+    "eggs": [
+      "terraria",
+      "tshock",
+      "tmodloader"
+    ],
+    "images": [
+      "terraria",
+      "tshock",
+      "tmodloader"
+    ]
+  },
+  "out": {
+    "template": "say {line}",
+    "style": "terraria",
+    "escape": "none",
+    "max_length": 400
+  },
+  "in": {
+    "strip_ansi": true,
+    "line_prefix": "^(?:: )?",
+    "patterns": {
+      "chat": "<{player}> {message}",
+      "join": "^(?P<player>.{1,20}?)(?: \\([^()]*\\))? has joined\\.$",
+      "leave": "{player} has left.",
+      "server_ready": "Server started",
+      "broadcast": "<Server> {message} || (Server Broadcast) {message}"
+    }
+  },
+  "status": "likely",
+  "notes": "Vanilla and TShock 6+. TShock 5 logs chat as \"Name: message\": change the chat pattern to {player}: {message} if you use it."
+}
