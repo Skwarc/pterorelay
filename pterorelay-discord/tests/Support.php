@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Pterodactyl\Models\Extension;
 use Pterodactyl\Models\Server;
-use Pterodactyl\Services\Extensions\ExtensionManager;
 use Pterodactyl\Services\Extensions\ExtensionProviderLoader;
 use Pterodactyl\Services\Extensions\ExtensionRepository;
 use PteroRelay\Models\Agent;
@@ -34,7 +33,6 @@ final class Support
         ]);
         app()->forgetInstance(ExtensionRepository::class);
         app()->forgetInstance(ExtensionProviderLoader::class);
-        app()->forgetInstance(ExtensionManager::class);
 
         $manifest = json_decode((string) file_get_contents(self::SOURCE.'/extension.json'), true, flags: JSON_THROW_ON_ERROR);
         Extension::query()->create(['identifier' => 'pterorelay-discord', 'version' => $manifest['version'], 'enabled' => true]);

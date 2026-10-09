@@ -44,9 +44,8 @@ $suggestAdapter = static function (array $catalog, Server $server) use ($words):
 // The community preset library: presets/index.json and its files in a public GitHub repository,
 // served through jsDelivr. The repository is an extension setting; empty means not configured.
 $libraryBase = static function (): string {
-    $repository = trim((string) app(\Pterodactyl\Services\Extensions\ExtensionManager::class)->settings('pterorelay-discord')->get('repository'));
-    abort_if($repository === '', 404, 'The preset library is not configured. An administrator can set its GitHub repository in the PteroRelay extension settings.');
-    abort_unless(preg_match('/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/', $repository) === 1, 404, 'The preset library repository setting must look like owner/repository.');
+    $repository = \PteroRelay\PteroRelayProvider::repository();
+    abort_if($repository === '', 404, 'The preset library is not configured. An administrator can set its GitHub repository (owner/repository) in the PteroRelay extension settings.');
 
     return "https://cdn.jsdelivr.net/gh/{$repository}@main/presets/";
 };

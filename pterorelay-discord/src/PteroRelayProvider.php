@@ -10,8 +10,22 @@ use Pterodactyl\Services\Extensions\ExtensionSettingsDefinition;
 
 final class PteroRelayProvider extends ExtensionProvider
 {
+    /** Container key of this extension's settings, for code outside the provider. */
+    private const SETTINGS = 'pterorelay.settings';
+
+    /** The GitHub repository (owner/name) for update checks and the preset library, or ''. */
+    public static function repository(): string
+    {
+        $repository = trim((string) (app(self::SETTINGS)->get('repository') ?? ''));
+
+        return preg_match('/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/', $repository) === 1 ? $repository : '';
+    }
+
     public function boot(): void
     {
+        // Panels changed how other code reads extension settings (ExtensionManager, later the
+        // Extensions facade); the provider's own settings() exists in every version.
+        $this->app->instance(self::SETTINGS, $this->settings());
         $this->excludeAgentRoutesFromCsrf();
         $this->registerApiRoutes();
         $this->registerRootRoutes($this->extensionPath('routes', 'agent.php'), 'pterorelay-agent');

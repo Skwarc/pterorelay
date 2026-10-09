@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
-use Pterodactyl\Services\Extensions\ExtensionManager;
 use PteroRelay\Models\Agent;
 use Throwable;
 
@@ -54,8 +53,8 @@ final class AdminController
     public function updates(): JsonResponse
     {
         $current = self::extensionVersion();
-        $repository = (string) (app(ExtensionManager::class)->settings('pterorelay-discord')->get('repository') ?? '');
-        if (preg_match('/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/', $repository) !== 1) {
+        $repository = \PteroRelay\PteroRelayProvider::repository();
+        if ($repository === '') {
             return new JsonResponse(['current' => $current, 'configured' => false]);
         }
         $latest = Cache::remember("pterorelay:latest-release:{$repository}", now()->addHours(6), function () use ($repository): ?array {
