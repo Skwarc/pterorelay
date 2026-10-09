@@ -1,4 +1,4 @@
-"""One-command PteroSync release.
+"""One-command PteroRelay release.
 
     python scripts/release.py 0.2.0-beta.2      # explicit version
     python scripts/release.py --bump            # 0.2.0-beta.1 -> 0.2.0-beta.2, 0.2.0 -> 0.2.1
@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXTENSION = ROOT / "pterosync-discord"
+EXTENSION = ROOT / "pterorelay-discord"
 RELEASE_DIR = ROOT / "release"
 VERSION_RE = re.compile(r"^\d+\.\d+\.\d+(?:-(?:alpha|beta|rc)\.\d+)?$")
 
@@ -91,8 +91,8 @@ def main() -> None:
     parser.add_argument("--skip-docker", action="store_true", help="do not build the agent Docker image")
     parser.add_argument("--skip-panel-check", action="store_true",
                         help="skip PHPStan and the PHP tests against the panel (needs Docker)")
-    parser.add_argument("--panel", default=os.environ.get("PTEROSYNC_PANEL_URL"),
-                        help="after pushing, wait until this panel serves the new version (default: PTEROSYNC_PANEL_URL)")
+    parser.add_argument("--panel", default=os.environ.get("PTERORELAY_PANEL_URL"),
+                        help="after pushing, wait until this panel serves the new version (default: PTERORELAY_PANEL_URL)")
     args = parser.parse_args()
 
     previous = current_version()
@@ -134,18 +134,18 @@ def main() -> None:
     run("npm", "run", "build", cwd=EXTENSION)
 
     step("Package")
-    run(sys.executable, "scripts/build_agent_bundle.py", "pterosync-discord/resources/agent/pterosync-agent.zip")
+    run(sys.executable, "scripts/build_agent_bundle.py", "pterorelay-discord/resources/agent/pterorelay-agent.zip")
     RELEASE_DIR.mkdir(exist_ok=True)
-    archive = RELEASE_DIR / f"pterosync-discord-{tag}.pteroext"
+    archive = RELEASE_DIR / f"pterorelay-discord-{tag}.pteroext"
     digest = package(EXTENSION, archive, tag)
     archive.with_suffix(".pteroext.sha256").write_text(f"{digest}  {archive.name}\n", encoding="ascii")
-    # Stable name for links to releases/latest/download/pterosync-discord.zip.
-    shutil.copyfile(archive, RELEASE_DIR / "pterosync-discord.zip")
+    # Stable name for links to releases/latest/download/pterorelay-discord.zip.
+    shutil.copyfile(archive, RELEASE_DIR / "pterorelay-discord.zip")
     print(f"   {archive.relative_to(ROOT)}  sha256 {digest}")
 
     if not args.skip_docker:
         step("Agent Docker image")
-        run("docker", "build", "-t", f"pterosync-agent:{version}", "-t", "pterosync-agent:latest", ".")
+        run("docker", "build", "-t", f"pterorelay-agent:{version}", "-t", "pterorelay-agent:latest", ".")
 
     if args.no_push:
         print(f"\nBuilt {tag} locally; nothing was committed or pushed.")
@@ -155,7 +155,7 @@ def main() -> None:
     run("git", "add", "-A")  # release/ is gitignored
     if output("git", "diff", "--cached", "--name-only"):
         run("git", "commit", "-m", f"release: {version}")
-    run("git", "tag", "-a", tag, "-m", f"PteroSync {version}")
+    run("git", "tag", "-a", tag, "-m", f"PteroRelay {version}")
     run("git", "push", "origin", "HEAD", retries=2)
     run("git", "push", "origin", tag, retries=2)
     print(f"\nReleased {tag}. Upload {archive.relative_to(ROOT)} or the Gitea release asset in Admin -> Extensions.")

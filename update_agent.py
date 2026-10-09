@@ -1,8 +1,8 @@
 """Keep an agent installed from the panel in step with the panel's extension version.
 
-Runs before the bot when the agent is hosted as a Pterodactyl server (PteroSync
-Agent egg). It downloads the agent bundle the PteroSync extension serves at
-``<PANEL_PUBLIC_URL>/pterosync-agent/bundle`` whenever the panel has a different
+Runs before the bot when the agent is hosted as a Pterodactyl server (PteroRelay
+Agent egg). It downloads the agent bundle the PteroRelay extension serves at
+``<PANEL_PUBLIC_URL>/pterorelay-agent/bundle`` whenever the panel has a different
 version, so updating the extension also updates the agent on its next restart.
 Standard library only: it must work before the requirements are installed.
 
@@ -25,7 +25,7 @@ TIMEOUT = 60
 
 
 def fetch(url: str) -> bytes:
-    request = urllib.request.Request(url, headers={"User-Agent": "PteroSync agent updater"})
+    request = urllib.request.Request(url, headers={"User-Agent": "PteroRelay agent updater"})
     with urllib.request.urlopen(request, timeout=TIMEOUT) as response:
         return response.read()
 
@@ -49,7 +49,7 @@ def main() -> int:
     force = "--install" in sys.argv[1:]
     panel = os.getenv("PANEL_PUBLIC_URL", "").strip().rstrip("/")
     if not panel:
-        print("PANEL_PUBLIC_URL is not set; cannot download the PteroSync agent.")
+        print("PANEL_PUBLIC_URL is not set; cannot download the PteroRelay agent.")
         return 0 if (HERE / "bot.py").exists() else 1
     # Downloaded code is executed: never fetch it over plain HTTP unless explicitly allowed.
     if not panel.startswith("https://") and os.getenv("ALLOW_INSECURE_PANEL", "0") != "1":
@@ -60,14 +60,14 @@ def main() -> int:
 
     current = local_version()
     try:
-        remote = fetch(f"{panel}/pterosync-agent/bundle/version").decode("utf-8").strip()
+        remote = fetch(f"{panel}/pterorelay-agent/bundle/version").decode("utf-8").strip()
         if remote == current and not force and (HERE / "bot.py").exists():
-            print(f"PteroSync agent {current} is up to date.")
+            print(f"PteroRelay agent {current} is up to date.")
             return 0
-        install(fetch(f"{panel}/pterosync-agent/bundle"))
-        print(f"PteroSync agent {current or '(none)'} -> {local_version()}.")
+        install(fetch(f"{panel}/pterorelay-agent/bundle"))
+        print(f"PteroRelay agent {current or '(none)'} -> {local_version()}.")
     except Exception as exc:  # the agent keeps running its current version
-        print(f"PteroSync agent update skipped: {exc}")
+        print(f"PteroRelay agent update skipped: {exc}")
         return 0 if (HERE / "bot.py").exists() else 1
     return 0
 

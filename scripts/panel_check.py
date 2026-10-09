@@ -4,7 +4,7 @@ Runs in Docker, inside the full panel checkout in ``.panel``:
 
 * PHPStan on the extension's PHP, with the panel's types, so a wrong constructor,
   method or argument fails here instead of on a live panel;
-* the extension's Pest tests (``pterosync-discord/tests``) with the panel's test
+* the extension's Pest tests (``pterorelay-discord/tests``) with the panel's test
   harness and a MySQL container.
 
 Usage: python scripts/panel_check.py [--phpstan-only | --tests-only] [--update-panel]
@@ -23,11 +23,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 PANEL = ROOT / ".panel"
-EXTENSION = ROOT / "pterosync-discord"
+EXTENSION = ROOT / "pterorelay-discord"
 CI = ROOT / "scripts" / "panel-ci"
-IMAGE = "pterosync-panel-ci"
-NETWORK = "pterosync-panel-ci"
-MYSQL = "pterosync-panel-ci-mysql"
+IMAGE = "pterorelay-panel-ci"
+NETWORK = "pterorelay-panel-ci"
+MYSQL = "pterorelay-panel-ci-mysql"
 PANEL_BRANCH = "2.0-develop"
 
 
@@ -62,7 +62,7 @@ def ensure_panel(update: bool) -> None:
 
 def mounts() -> list[str]:
     return ["-v", f"{PANEL}:/panel", "-v", f"{EXTENSION}:/ext:ro", "-v", f"{CI}:/panel-ci:ro",
-            "-v", "pterosync-composer-cache:/root/.composer/cache"]
+            "-v", "pterorelay-composer-cache:/root/.composer/cache"]
 
 
 def app_env(database: bool) -> list[str]:
@@ -101,7 +101,7 @@ def start_mysql() -> None:
 
 def tests() -> None:
     """Copy the extension's tests into the panel and run them with its harness."""
-    target = PANEL / "tests" / "Integration" / "PteroSync"
+    target = PANEL / "tests" / "Integration" / "PteroRelay"
     shutil.rmtree(target, ignore_errors=True)
     shutil.copytree(EXTENSION / "tests", target)
     try:
@@ -112,7 +112,7 @@ def tests() -> None:
         docker_run(["sh", "-c", "php artisan migrate:fresh --seed --force -q"
                     f" && php artisan migrate {ext} -q && php artisan migrate:reset {ext}"
                     f" && php artisan migrate {ext}"
-                    " && SKIP_MIGRATIONS=1 php vendor/bin/pest --colors=never tests/Integration/PteroSync"], database=True)
+                    " && SKIP_MIGRATIONS=1 php vendor/bin/pest --colors=never tests/Integration/PteroRelay"], database=True)
     finally:
         shutil.rmtree(target, ignore_errors=True)
 

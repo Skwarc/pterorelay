@@ -1,7 +1,7 @@
-# PteroSync Contributor License Agreement
+# PteroRelay Contributor License Agreement
 
-This agreement is between you ("You") and the PteroSync project maintainer ("the
-Maintainer"). It applies to every Contribution You submit to the PteroSync project.
+This agreement is between you ("You") and the PteroRelay project maintainer ("the
+Maintainer"). It applies to every Contribution You submit to the PteroRelay project.
 By accepting it (for example through CLA Assistant on a pull request), You agree to
 the terms below.
 

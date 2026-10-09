@@ -4,7 +4,7 @@ Thanks for helping. The easiest and most useful contribution is a **game preset*
 
 ## Game presets
 
-A preset tells PteroSync how a game writes chat, joins and leaves to its console and
+A preset tells PteroRelay how a game writes chat, joins and leaves to its console and
 which command broadcasts a message. Presets are JSON, so no programming is needed.
 
 1. In the panel, open a server → **Discord** → **Game integration**, set up the patterns
@@ -26,7 +26,7 @@ issue first so we can agree on the approach.
 - Run `python -m unittest discover -s tests` and `python scripts/panel_check.py`
   (PHPStan and the PHP tests against the panel, needs Docker) before opening a pull
   request.
-- Keep the agent free of game mods: PteroSync only uses the Wings console.
+- Keep the agent free of game mods: PteroRelay only uses the Wings console.
 
 ### Contributor License Agreement
 
@@ -38,8 +38,8 @@ AGPL.
 
 ## Reporting bugs
 
-Open an issue with the PteroSync, panel and Wings versions, what you expected and
-what happened. The **Diagnostics** box in Admin → PteroSync and the agent server's
+Open an issue with the PteroRelay, panel and Wings versions, what you expected and
+what happened. The **Diagnostics** box in Admin → PteroRelay and the agent server's
 console usually show the cause. Remove tokens, secrets and webhook URLs before
 pasting logs.
 

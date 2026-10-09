@@ -61,11 +61,11 @@ CONSOLE_STREAM_BUDGETS: dict[str, list] = {}
 WS_SESSION: aiohttp.ClientSession | None = None
 PANEL_PUBLIC_URL = os.getenv("PANEL_PUBLIC_URL", "").rstrip("/")
 DEFAULT_LOCALE = normalize_locale(os.getenv("DEFAULT_LOCALE", "en"))
-PTEROSYNC_AGENT_ID = os.getenv("PTEROSYNC_AGENT_ID", "")
-PTEROSYNC_AGENT_SECRET = os.getenv("PTEROSYNC_AGENT_SECRET", "")
+PTERORELAY_AGENT_ID = os.getenv("PTERORELAY_AGENT_ID", "")
+PTERORELAY_AGENT_SECRET = os.getenv("PTERORELAY_AGENT_SECRET", "")
 AGENT_CLIENT = (
-    AgentClient(PANEL_PUBLIC_URL, PTEROSYNC_AGENT_ID, PTEROSYNC_AGENT_SECRET)
-    if PANEL_PUBLIC_URL and PTEROSYNC_AGENT_ID and PTEROSYNC_AGENT_SECRET else None
+    AgentClient(PANEL_PUBLIC_URL, PTERORELAY_AGENT_ID, PTERORELAY_AGENT_SECRET)
+    if PANEL_PUBLIC_URL and PTERORELAY_AGENT_ID and PTERORELAY_AGENT_SECRET else None
 )
 # Set by Wings when the agent runs as a Pterodactyl server; that server is never controlled.
 SELF_SERVER_UUID = os.getenv("P_SERVER_UUID", "").strip().lower()
@@ -132,7 +132,7 @@ def server_uuid(server_id: str) -> str:
     """The panel UUID of a linked server; unknown servers are refused before any request."""
     uuid = AGENT_SERVER_UUIDS.get(normalize_server_identifier(server_id))
     if uuid is None:
-        raise PermissionError("This server is not linked to PteroSync.")
+        raise PermissionError("This server is not linked to PteroRelay.")
     return uuid
 
 
@@ -1183,7 +1183,7 @@ async def console_cmd(interaction: discord.Interaction, server_id: str, command:
         )
 
 
-@bot.tree.command(name="settings", description="Open PteroSync settings in the Pterodactyl panel")
+@bot.tree.command(name="settings", description="Open PteroRelay settings in the Pterodactyl panel")
 async def settings_cmd(interaction: discord.Interaction):
     """Return an authenticated panel link; the URL itself never grants access."""
     if not PANEL_PUBLIC_URL:
@@ -1193,7 +1193,7 @@ async def settings_cmd(interaction: discord.Interaction):
     view = discord.ui.View(timeout=60)
     view.add_item(discord.ui.Button(
         label=tr(interaction, "settings.open"),
-        url=f"{PANEL_PUBLIC_URL}/account/pterosync",
+        url=f"{PANEL_PUBLIC_URL}/account/pterorelay",
         emoji="⚙️",
     ))
     embed = discord.Embed(
@@ -1351,7 +1351,7 @@ def bot_info() -> dict:
 
 
 def collect_diagnostics() -> dict:
-    """Problems the panel shows in Admin → PteroSync, so nobody has to read the agent log."""
+    """Problems the panel shows in Admin → PteroRelay, so nobody has to read the agent log."""
     problems: list[dict] = []
 
     def add(kind: str, server_id: str | None, message: str, guild: str | None = None) -> None:
@@ -1445,16 +1445,16 @@ async def sync_agent_heartbeat():
         AGENT_SERVER_UUIDS = uuids
         AGENT_SERVER_NAMES = names
         if HEARTBEAT_FAILURES:
-            logger.info("PteroSync agent heartbeat recovered after %d failed attempt(s)", HEARTBEAT_FAILURES)
+            logger.info("PteroRelay agent heartbeat recovered after %d failed attempt(s)", HEARTBEAT_FAILURES)
         HEARTBEAT_FAILURES = 0
     except (aiohttp.ClientConnectionError, asyncio.TimeoutError) as exc:
         # Network blips are retried every 30 s; only a persistent outage is an error.
         HEARTBEAT_FAILURES += 1
         log = logger.error if HEARTBEAT_FAILURES >= 3 else logger.warning
-        log("PteroSync agent heartbeat failed (%d in a row): %s: %s", HEARTBEAT_FAILURES, type(exc).__name__, exc)
+        log("PteroRelay agent heartbeat failed (%d in a row): %s: %s", HEARTBEAT_FAILURES, type(exc).__name__, exc)
     except Exception:
         HEARTBEAT_FAILURES += 1
-        logger.exception("PteroSync agent heartbeat failed")
+        logger.exception("PteroRelay agent heartbeat failed")
 
 
 for background_task in (
@@ -1489,20 +1489,20 @@ async def on_ready():
         relay_console_events.start()
     logger.info("Heartbeat, console relay, live status, presence and healthcheck tasks started")
     # Pterodactyl's egg waits for this line to mark the agent server as running.
-    logger.info("PteroSync agent ready")
+    logger.info("PteroRelay agent ready")
 
 
 def validate_environment() -> str:
-    """The agent needs its Discord token and its credentials from Admin → PteroSync."""
+    """The agent needs its Discord token and its credentials from Admin → PteroRelay."""
     required = {
         "DISCORD_TOKEN": os.getenv("DISCORD_TOKEN"), "PANEL_PUBLIC_URL": PANEL_PUBLIC_URL,
-        "PTEROSYNC_AGENT_ID": PTEROSYNC_AGENT_ID, "PTEROSYNC_AGENT_SECRET": PTEROSYNC_AGENT_SECRET,
+        "PTERORELAY_AGENT_ID": PTERORELAY_AGENT_ID, "PTERORELAY_AGENT_SECRET": PTERORELAY_AGENT_SECRET,
     }
     missing = [name for name, value in required.items() if not value]
     if missing:
         raise RuntimeError(
             f"Missing required environment variables: {', '.join(missing)}. "
-            "Deploy the agent from Admin → PteroSync, which fills them in."
+            "Deploy the agent from Admin → PteroRelay, which fills them in."
         )
     if not PANEL_PUBLIC_URL.startswith(("http://", "https://")):
         raise RuntimeError("PANEL_PUBLIC_URL must start with https://")

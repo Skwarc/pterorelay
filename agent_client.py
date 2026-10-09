@@ -36,8 +36,8 @@ class ConsoleUnavailable(Exception):
 
 
 class AgentClient:
-    def __init__(self, panel_url: str, agent_id: str, secret: str, version: str = "0.5.0-beta.4"):
-        self.base_url = panel_url.rstrip("/") + "/pterosync-agent"
+    def __init__(self, panel_url: str, agent_id: str, secret: str, version: str = "0.6.0-beta.1"):
+        self.base_url = panel_url.rstrip("/") + "/pterorelay-agent"
         self.agent_id = agent_id
         self.secret = secret.encode()
         self.version = version
@@ -49,11 +49,11 @@ class AgentClient:
         message = "\n".join((method.upper(), path, timestamp_value, nonce_value, digest)).encode()
         signature = hmac.new(self.secret, message, hashlib.sha256).hexdigest()
         return {
-            "X-PteroSync-Agent": self.agent_id,
-            "X-PteroSync-Timestamp": timestamp_value,
-            "X-PteroSync-Nonce": nonce_value,
-            "X-PteroSync-Signature": signature,
-            "X-PteroSync-Version": self.version,
+            "X-PteroRelay-Agent": self.agent_id,
+            "X-PteroRelay-Timestamp": timestamp_value,
+            "X-PteroRelay-Nonce": nonce_value,
+            "X-PteroRelay-Signature": signature,
+            "X-PteroRelay-Version": self.version,
             "Content-Type": "application/json",
             "Accept": "application/json",
         }
@@ -66,7 +66,7 @@ class AgentClient:
 
         Actions that must not run twice (power, console commands, chat) are never retried.
         """
-        path = f"/pterosync-agent/{endpoint.lstrip('/')}"
+        path = f"/pterorelay-agent/{endpoint.lstrip('/')}"
         body = json.dumps(payload or {}, separators=(",", ":"), ensure_ascii=False).encode()
         attempts = 2 if (method.upper() == "GET" if retry is None else retry) else 1
         for attempt in range(attempts):

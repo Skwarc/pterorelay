@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: pterosync-discord/package-lock.json
+          cache-dependency-path: pterorelay-discord/package-lock.json
 
       - uses: shivammathur/setup-php@v2
         with:
@@ -42,33 +42,33 @@ jobs:
         run: python scripts/panel_check.py
 
       - name: Build the extension
-        working-directory: pterosync-discord
+        working-directory: pterorelay-discord
         run: |
           npm ci --no-audit --no-fund
           npm run typecheck
           npm run build
 
       - name: Lint PHP
-        run: find pterosync-discord -name '*.php' -not -path '*/node_modules/*' -print0 | xargs -0 -r -n1 php -l > /dev/null
+        run: find pterorelay-discord -name '*.php' -not -path '*/node_modules/*' -print0 | xargs -0 -r -n1 php -l > /dev/null
 
       - name: Package
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          python scripts/build_agent_bundle.py pterosync-discord/resources/agent/pterosync-agent.zip
+          python scripts/build_agent_bundle.py pterorelay-discord/resources/agent/pterorelay-agent.zip
           mkdir -p release
-          if [[ "$RELEASE_TAG" == v* ]]; then VERSION="$RELEASE_TAG"; else VERSION="v$(python -c "import json;print(json.load(open('pterosync-discord/extension.json'))['version'])")"; fi
-          python scripts/package_extension.py pterosync-discord "release/pterosync-discord-${VERSION}.pteroext" --version "$VERSION"
-          cp "release/pterosync-discord-${VERSION}.pteroext" release/pterosync-discord.zip
+          if [[ "$RELEASE_TAG" == v* ]]; then VERSION="$RELEASE_TAG"; else VERSION="v$(python -c "import json;print(json.load(open('pterorelay-discord/extension.json'))['version'])")"; fi
+          python scripts/package_extension.py pterorelay-discord "release/pterorelay-discord-${VERSION}.pteroext" --version "$VERSION"
+          cp "release/pterorelay-discord-${VERSION}.pteroext" release/pterorelay-discord.zip
           cp docker-compose.yml .env.example release/
 
       - uses: actions/upload-artifact@v4
         with:
-          name: pterosync-discord
+          name: pterorelay-discord
           path: release/
           if-no-files-found: error
 
-      # Tags publish a release; README links use releases/latest/download/pterosync-discord.zip.
+      # Tags publish a release; README links use releases/latest/download/pterorelay-discord.zip.
       - name: Publish release
         if: startsWith(github.ref, 'refs/tags/v')
         env:
@@ -80,5 +80,5 @@ jobs:
           if gh release view "$TAG" > /dev/null 2>&1; then
             gh release upload "$TAG" release/* --clobber
           else
-            gh release create "$TAG" release/* --title "PteroSync $TAG" --generate-notes --verify-tag --latest
+            gh release create "$TAG" release/* --title "PteroRelay $TAG" --generate-notes --verify-tag --latest
           fi

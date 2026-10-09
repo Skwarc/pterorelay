@@ -12,7 +12,7 @@ SUPPORTED_LOCALES = {"en", "sl"}
 
 MESSAGES: dict[str, dict[str, str]] = {
     "en": {
-        "settings.title": "PteroSync settings",
+        "settings.title": "PteroRelay settings",
         "settings.description": "Manage Discord roles, channels and permissions in the Pterodactyl panel.",
         "settings.open": "Open settings",
         "settings.unavailable": "The panel settings URL is not configured.",
@@ -78,7 +78,7 @@ MESSAGES: dict[str, dict[str, str]] = {
         "status.error": "Pterodactyl error: {message}",
     },
     "sl": {
-        "settings.title": "Nastavitve PteroSync",
+        "settings.title": "Nastavitve PteroRelay",
         "settings.description": "Discord vloge, kanale in dovoljenja upravljaš v Pterodactyl panelu.",
         "settings.open": "Odpri nastavitve",
         "settings.unavailable": "Povezava do nastavitev panela ni nastavljena.",

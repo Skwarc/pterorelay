@@ -26,9 +26,9 @@ class FakePanel(BaseHTTPRequestHandler):
     downloads = 0
 
     def do_GET(self):
-        if self.path == "/pterosync-agent/bundle/version":
+        if self.path == "/pterorelay-agent/bundle/version":
             body = self.version.encode()
-        elif self.path == "/pterosync-agent/bundle":
+        elif self.path == "/pterorelay-agent/bundle":
             type(self).downloads += 1
             body = self.bundle
         else:

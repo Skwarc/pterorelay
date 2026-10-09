@@ -1,11 +1,11 @@
-# PteroSync
+# PteroRelay
 
 Discord integration for **Pterodactyl Panel 2.0**. You can control game servers
 from Discord, give Discord roles access to individual servers, and relay chat and
 events between Discord and the game in both directions. Chat works for any game
 with a console: no game mods or plugins are needed.
 
-PteroSync has two parts:
+PteroRelay has two parts:
 
 - **The extension** is installed in the panel. It stores Discord servers, role
   permissions and settings, and authorizes every action.
@@ -14,7 +14,7 @@ PteroSync has two parts:
 
 ![Game integration settings of a server](docs/screenshots/game-integration.png)
 
-> **Beta.** PteroSync targets Pterodactyl Panel 2.0 development builds (SDK
+> **Beta.** PteroRelay targets Pterodactyl Panel 2.0 development builds (SDK
 > `2.0.0-beta.4`). Back up the panel database before upgrades.
 
 ---
@@ -36,13 +36,13 @@ PteroSync has two parts:
 
 ### 2. Install the extension
 
-1. Download [`pterosync-discord.zip`](https://github.com/Skwarc/pterosync/releases/latest/download/pterosync-discord.zip)
-   from the [latest release](https://github.com/Skwarc/pterosync/releases/latest).
+1. Download [`pterorelay-discord.zip`](https://github.com/Skwarc/pterorelay/releases/latest/download/pterorelay-discord.zip)
+   from the [latest release](https://github.com/Skwarc/pterorelay/releases/latest).
 2. In the panel, open **Admin → Extensions → Install**, upload the file and make
    sure the extension is enabled. Or, on the panel host:
 
    ```sh
-   php artisan p:extension:install /path/to/pterosync-discord.zip --enable
+   php artisan p:extension:install /path/to/pterorelay-discord.zip --enable
    ```
 
 If the panel itself runs in Docker, keep the extension directories on persistent
@@ -58,7 +58,7 @@ services:
 
 ### 3. Deploy the agent
 
-1. Open **Admin → PteroSync → Run the agent on this panel**.
+1. Open **Admin → PteroRelay → Run the agent on this panel**.
 2. Paste the bot token and choose a node.
 3. Click **Deploy agent**.
 
@@ -66,16 +66,16 @@ services:
 
 The panel then:
 
-- imports the **PteroSync Agent** egg;
+- imports the **PteroRelay Agent** egg;
 - creates the agent's credentials;
 - creates a small server (128 MB RAM, one free allocation that the agent does not
   listen on), which downloads the agent from your panel and starts it.
 
-The agent is running when its console shows `PteroSync agent ready` and it appears
-as connected in **Admin → PteroSync**. The agent never stops, restarts or sends
+The agent is running when its console shows `PteroRelay agent ready` and it appears
+as connected in **Admin → PteroRelay**. The agent never stops, restarts or sends
 commands to the server it runs on.
 
-<img src="docs/screenshots/agent-server.png" alt="The PteroSync Agent server using about 43 MB of memory" width="234" align="right">
+<img src="docs/screenshots/agent-server.png" alt="The PteroRelay Agent server using about 43 MB of memory" width="234" align="right">
 
 The agent idles at about 45 MB of memory and close to 0% CPU. Its server gets
 128 MB, which leaves room for the dependency install on first start.
@@ -84,12 +84,12 @@ The agent idles at about 45 MB of memory and close to 0% CPU. Its server gets
 If a step fails, the step list shows which one. The manual route is:
 
 1. Click **Download the egg to import it yourself** and import it under **Eggs**.
-2. Create agent credentials in **Admin → PteroSync**.
+2. Create agent credentials in **Admin → PteroRelay**.
 3. Create a server from the egg and fill in the token, agent ID and secret.
 
 ### 4. Connect your servers
 
-1. In **Admin → PteroSync → Discord servers**, choose the **Integration channel**,
+1. In **Admin → PteroRelay → Discord servers**, choose the **Integration channel**,
    the default channel for game chat. Optionally also choose a **Notification
    channel** for start/stop messages.
 
@@ -119,20 +119,20 @@ to the game, and game chat comes back to Discord.
 ## Updating
 
 1. Upload the new `.pteroext` in **Admin → Extensions**.
-2. Restart the **PteroSync Agent** server.
+2. Restart the **PteroRelay Agent** server.
 
 On every start the agent compares its version with the extension's and, if they
 differ, downloads the matching agent from the panel. To pin a version, set
 **Auto update** to `0` in the agent server's **Startup** tab.
 
 To be told about new releases, set **GitHub repository** (`owner/name`) under
-**Admin → Extensions → PteroSync Discord → Settings**. **Admin → PteroSync** then
+**Admin → Extensions → PteroRelay Discord → Settings**. **Admin → PteroRelay** then
 shows a banner when a newer release exists. The same setting points the community
 preset library at the repository.
 
 ## Checking the setup
 
-**Admin → PteroSync** starts with a **Setup checklist**:
+**Admin → PteroRelay** starts with a **Setup checklist**:
 
 - the agent is connected and on the same version as the extension;
 - the Discord bot and its Message Content intent, with an invite link carrying the
@@ -193,7 +193,7 @@ names, because every Discord server the bot is in can see it.
 
 Servers are linked, and roles given access, in the panel; the bot has no setup
 commands. To limit the channels where members can use the bot, use Discord's
-**Server Settings → Integrations → PteroSync**.
+**Server Settings → Integrations → PteroRelay**.
 
 ---
 
@@ -283,8 +283,8 @@ Minecraft: Java Edition). It is only stored when you click **Save integration**.
 
 The community preset library is the [`presets/`](presets/) folder of this
 repository. The panel reads `presets/index.json` and the setups through jsDelivr
-(`https://cdn.jsdelivr.net/gh/Skwarc/pterosync@main/presets/`). The extension setting
-**repository** (`Skwarc/pterosync` by default) also drives the update check; point it at a fork
+(`https://cdn.jsdelivr.net/gh/Skwarc/pterorelay@main/presets/`). The extension setting
+**repository** (`Skwarc/pterorelay` by default) also drives the update check; point it at a fork
 to use your own library. The presets built into the agent (`adapters/presets/`) keep
 working without it.
 
@@ -298,7 +298,7 @@ To add your setup:
 
    ```json
    {
-     "format": "pterosync-game",
+     "format": "pterorelay-game",
      "version": 1,
      "name": "Terraria – TShock 5",
      "description": "What it changes, which server versions it is for, and known limits.",
@@ -325,13 +325,13 @@ To add your setup:
 
 If you prefer not to run the agent on a node:
 
-1. Create agent credentials in **Admin → PteroSync → Discord agent**. The secret is
+1. Create agent credentials in **Admin → PteroRelay → Discord agent**. The secret is
    shown only once.
 2. Set up the agent:
 
    ```bash
-   git clone https://github.com/Skwarc/pterosync.git pterosync && cd pterosync
-   cp .env.example .env   # set DISCORD_TOKEN, PANEL_PUBLIC_URL, PTEROSYNC_AGENT_ID, PTEROSYNC_AGENT_SECRET
+   git clone https://github.com/Skwarc/pterorelay.git pterorelay && cd pterorelay
+   cp .env.example .env   # set DISCORD_TOKEN, PANEL_PUBLIC_URL, PTERORELAY_AGENT_ID, PTERORELAY_AGENT_SECRET
    docker compose up -d --build
    ```
 
@@ -345,7 +345,7 @@ console, to the Wings port of your nodes; no ports are published.
 | --- | --- | --- |
 | `DISCORD_TOKEN` | — | Discord bot token |
 | `PANEL_PUBLIC_URL` | — | Public URL of the panel |
-| `PTEROSYNC_AGENT_ID`, `PTEROSYNC_AGENT_SECRET` | — | Agent credentials from **Admin → PteroSync** |
+| `PTERORELAY_AGENT_ID`, `PTERORELAY_AGENT_SECRET` | — | Agent credentials from **Admin → PteroRelay** |
 | `DEFAULT_LOCALE` | `en` | Default reply language (`en` or `sl`) |
 | `LOG_LEVEL` | `INFO` | `DEBUG` logs every console line the relay reads |
 | `CONSOLE_MODE` | `auto` | `auto`: Wings websocket, polling while it is down; `websocket`: never poll; `poll`: never open websockets |
@@ -359,8 +359,8 @@ console, to the Wings port of your nodes; no ports are published.
 
 | Symptom | Check |
 | --- | --- |
-| Agent not connected | The agent server's console: `PteroSync agent ready` should appear. Check that `PANEL_PUBLIC_URL` is reachable from the node. |
-| Discord tab says the bot is offline | The panel has had no heartbeat from that bot's agent for over 90 s. Check **Admin → PteroSync** for its last heartbeat and that the agent server is running; then see *Agent not connected*. |
+| Agent not connected | The agent server's console: `PteroRelay agent ready` should appear. Check that `PANEL_PUBLIC_URL` is reachable from the node. |
+| Discord tab says the bot is offline | The panel has had no heartbeat from that bot's agent for over 90 s. Check **Admin → PteroRelay** for its last heartbeat and that the agent server is running; then see *Agent not connected*. |
 | Discord message gets a ⚠️ reaction | The relay to the game failed; the agent log shows `Chat relay to … failed`. |
 | `Wings websocket for … is unavailable` in the agent log | Chat still works through polling. The agent must reach the node's Wings address (FQDN and port, as in the panel's console page). `HTTP 403` means Wings refused the Origin: the panel URL in Wings' `config.yml` (`remote`) must match the panel's `APP_URL`. |
 | Game chat does not reach Discord | Set `LOG_LEVEL=DEBUG` and restart the agent. Each console line is logged with `-> no match` or the event it became, which shows whether the pattern needs adjusting. Also check the **Relay chat and events** switch. |
@@ -375,7 +375,7 @@ console, to the Wings port of your nodes; no ports are published.
 - The agent has no Pterodactyl API key. Power actions, console commands and chat
   go through the extension, which checks the Discord user's roles against the
   server's permissions.
-- The extension serves the agent's code at `/pterosync-agent/bundle`, which keeps
+- The extension serves the agent's code at `/pterorelay-agent/bundle`, which keeps
   the agent and extension versions in step.
 - Discord servers the bot has left (kicked or removed) are kept for 30 days, then
   deleted together with their links, roles and settings. Deleting a game server
@@ -389,7 +389,7 @@ git-ignored) and needs Docker:
 
 ```bash
 python scripts/panel_check.py                 # PHPStan + PHP tests against the panel
-cd pterosync-discord && npm ci && npm run build && cd ..
+cd pterorelay-discord && npm ci && npm run build && cd ..
 
 python -m unittest discover -s tests          # agent tests
 python scripts/release.py --no-push           # full local build into release/
@@ -401,7 +401,7 @@ python scripts/verify_panel.py https://panel.example.com   # after uploading
 
 - **PHPStan** on the extension with the panel's own types, so a wrong class, method
   or argument fails the build instead of a live panel;
-- the **Pest tests** in `pterosync-discord/tests` with the panel's test harness and a
+- the **Pest tests** in `pterorelay-discord/tests` with the panel's test harness and a
   MySQL container: agent request signing and replay, the agent never controlling its
   own server, the chat command check, link codes and the permission rules.
 
@@ -416,12 +416,12 @@ is described in [soak/README.md](soak/README.md).
 4. builds the agent bundle and the `.pteroext`;
 5. builds the Docker image;
 6. commits, tags and pushes;
-7. with `--panel URL` (or `PTEROSYNC_PANEL_URL`), waits until that panel serves the
+7. with `--panel URL` (or `PTERORELAY_PANEL_URL`), waits until that panel serves the
    new version after you upload it, and fails if the extension is disabled or broken.
 
 A `v*` tag also runs CI (`.github/workflows/build.yml` on GitHub,
 `.gitea/workflows/release.yml` on Gitea), which builds and publishes the release with
-a stable `pterosync-discord.zip` asset. The package contains what the panel's own
+a stable `pterorelay-discord.zip` asset. The package contains what the panel's own
 `p:extension:pack` would: the manifest, README, LICENSE, `routes`, `database`,
 `resources` (including the agent bundle), `dist` and `src`.
 
@@ -430,7 +430,7 @@ a stable `pterosync-discord.zip` asset. The package contains what the panel's ow
 | `bot.py`, `agent_client.py`, `chat_relay.py`, `wings_console.py`, `i18n.py`, `update_agent.py` | Agent |
 | `adapters/` | Game chat engine and presets (`adapters/presets/*.json`) |
 | `presets/` | Community preset library (`scripts/build_preset_index.py` writes `index.json`) |
-| `pterosync-discord/` | Panel extension: PHP routes and controllers, migrations, React screens |
+| `pterorelay-discord/` | Panel extension: PHP routes and controllers, migrations, React screens |
 | `scripts/` | Release, packaging and agent bundle builders |
 | `tests/` | Agent, adapter and packaging tests |
 | `soak/` | Soak test: fake game servers and a checker bot |
@@ -442,10 +442,10 @@ a stable `pterosync-discord.zip` asset. The package contains what the panel's ow
 | Panel | Pterodactyl Panel 2.0 with extensions (tested on `2.0-develop`, SDK `2.0.0-beta.4`) |
 | Wings | The Wings release that ships with Panel 2.0 |
 | PHP | 8.3 or newer (the panel's requirement) |
-| Agent | Python 3.11 (the PteroSync Agent egg uses `ghcr.io/parkervcp/yolks:python_3.11`) |
+| Agent | Python 3.11 (the PteroRelay Agent egg uses `ghcr.io/parkervcp/yolks:python_3.11`) |
 | Discord | A bot with the **Message Content** intent |
 
-From 1.0, PteroSync follows semantic versioning: no breaking changes to presets, the
+From 1.0, PteroRelay follows semantic versioning: no breaking changes to presets, the
 agent API or settings within 1.x. See [CHANGELOG.md](CHANGELOG.md).
 
 ## Data and privacy
@@ -488,7 +488,7 @@ Report vulnerabilities privately; see [SECURITY.md](SECURITY.md).
 
 ## Built with AI
 
-PteroSync is developed with the help of AI: most of the code, tests and documentation
+PteroRelay is developed with the help of AI: most of the code, tests and documentation
 were written with [Claude Code](https://claude.com/claude-code) (Anthropic), directed
 and reviewed by the maintainer. Every change goes through the same checks as any
 other: the Python tests, PHPStan and the integration tests against the panel, and a

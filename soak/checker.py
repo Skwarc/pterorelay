@@ -1,4 +1,4 @@
-"""Checker bot for the PteroSync soak test.
+"""Checker bot for the PteroRelay soak test.
 
 A second, separate Discord bot. It watches the chat channels of the fake game
 servers (fake_game.py) and records every relayed message:
@@ -111,7 +111,7 @@ def report(database: sqlite3.Connection, since: float, now: float | None = None)
     """Plain-text summary of everything received after ``since``."""
     now = now or time.time()
     hours = (now - since) / 3600
-    lines = [f"**PteroSync soak report** (last {hours:.1f} h)"]
+    lines = [f"**PteroRelay soak report** (last {hours:.1f} h)"]
     tags = [row[0] for row in database.execute("SELECT DISTINCT tag FROM chat WHERE received >= ? ORDER BY tag", (since,))]
     for tag in tags:
         rows = database.execute("SELECT seq, sent, received, leaked FROM chat WHERE tag = ? AND received >= ?", (tag, since)).fetchall()

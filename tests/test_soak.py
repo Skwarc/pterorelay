@@ -96,7 +96,7 @@ class SoakEggTests(unittest.TestCase):
         import json
         from scripts.build_soak_egg import EGG, egg
         self.assertEqual(json.loads(EGG.read_text(encoding="utf-8")), egg(),
-                         "soak/egg-pterosync-soak.json is stale: run python scripts/build_soak_egg.py")
+                         "soak/egg-pterorelay-soak.json is stale: run python scripts/build_soak_egg.py")
 
 
 class CheckerCatchUpTests(unittest.TestCase):

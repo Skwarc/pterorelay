@@ -1,4 +1,4 @@
-name: Build and publish PteroSync
+name: Build and publish PteroRelay
 
 on:
   push:
@@ -41,38 +41,38 @@ jobs:
           git -C .panel sparse-checkout set packages/sdk
 
       - name: Build the extension
-        working-directory: pterosync-discord
+        working-directory: pterorelay-discord
         run: |
           npm ci --no-audit --no-fund
           npm run typecheck
           npm run build
 
       - name: Lint PHP
-        run: find pterosync-discord -name '*.php' -not -path '*/node_modules/*' -print0 | xargs -0 -r -n1 php -l > /dev/null
+        run: find pterorelay-discord -name '*.php' -not -path '*/node_modules/*' -print0 | xargs -0 -r -n1 php -l > /dev/null
 
       - name: Package
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          python scripts/build_agent_bundle.py pterosync-discord/resources/agent/pterosync-agent.zip
+          python scripts/build_agent_bundle.py pterorelay-discord/resources/agent/pterorelay-agent.zip
           mkdir -p release
-          if [[ "$RELEASE_TAG" == v* ]]; then VERSION="$RELEASE_TAG"; else VERSION="v$(python -c "import json;print(json.load(open('pterosync-discord/extension.json'))['version'])")"; fi
-          python scripts/package_extension.py pterosync-discord "release/pterosync-discord-${VERSION}.pteroext" --version "$VERSION"
-          cp "release/pterosync-discord-${VERSION}.pteroext" release/pterosync-discord.zip
+          if [[ "$RELEASE_TAG" == v* ]]; then VERSION="$RELEASE_TAG"; else VERSION="v$(python -c "import json;print(json.load(open('pterorelay-discord/extension.json'))['version'])")"; fi
+          python scripts/package_extension.py pterorelay-discord "release/pterorelay-discord-${VERSION}.pteroext" --version "$VERSION"
+          cp "release/pterorelay-discord-${VERSION}.pteroext" release/pterorelay-discord.zip
           cp docker-compose.yml .env.example release/
 
       - name: Publish Gitea release
         uses: https://gitea.com/actions/gitea-release-action@v1.3.7
         with:
-          name: PteroSync ${{ github.ref_name }}
+          name: PteroRelay ${{ github.ref_name }}
           prerelease: ${{ contains(github.ref_name, 'alpha') || contains(github.ref_name, 'beta') || contains(github.ref_name, 'rc') }}
           body: |
-            Install `pterosync-discord.zip` (or the versioned `.pteroext`) in **Admin → Extensions**,
-            or on the panel host: `php artisan p:extension:install pterosync-discord.zip --enable`.
-            Then deploy the agent from **Admin → PteroSync → Run the agent on this panel**.
+            Install `pterorelay-discord.zip` (or the versioned `.pteroext`) in **Admin → Extensions**,
+            or on the panel host: `php artisan p:extension:install pterorelay-discord.zip --enable`.
+            Then deploy the agent from **Admin → PteroRelay → Run the agent on this panel**.
           files: |
             release/*.pteroext
             release/*.sha256
-            release/pterosync-discord.zip
+            release/pterorelay-discord.zip
             release/docker-compose.yml
             release/.env.example

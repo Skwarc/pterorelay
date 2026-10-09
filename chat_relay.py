@@ -11,7 +11,7 @@ import discord
 from adapters.formatters import sanitize
 
 logger = logging.getLogger("ptero-bot.chat")
-WEBHOOK_NAME = "PteroSync"
+WEBHOOK_NAME = "PteroRelay"
 CUSTOM_EMOJI_RE = re.compile(r"<a?:(\w{1,32}):\d{1,20}>")
 FORBIDDEN_WEBHOOK_NAMES = re.compile(r"discord|clyde|everyone|here", re.IGNORECASE)
 DEFAULT_EVENT_COLORS = {
@@ -109,7 +109,7 @@ class ChatRelay:
                 webhook = next(
                     (item for item in existing if item.name == WEBHOOK_NAME and item.user and item.user.id == self.client.user.id),
                     None,
-                ) or await channel.create_webhook(name=WEBHOOK_NAME, reason="PteroSync game chat relay")
+                ) or await channel.create_webhook(name=WEBHOOK_NAME, reason="PteroRelay game chat relay")
             except (discord.Forbidden, discord.HTTPException):
                 logger.warning("Could not prepare a chat webhook in #%s", channel.name)
         self.webhooks[channel.id] = webhook

@@ -68,10 +68,10 @@ class HelperTests(unittest.TestCase):
 
     def test_environment_validation_lists_missing_values(self):
         with (
-            patch.object(bot, "PANEL_PUBLIC_URL", ""), patch.object(bot, "PTEROSYNC_AGENT_ID", ""),
-            patch.object(bot, "PTEROSYNC_AGENT_SECRET", ""), patch.dict(os.environ, {}, clear=True),
+            patch.object(bot, "PANEL_PUBLIC_URL", ""), patch.object(bot, "PTERORELAY_AGENT_ID", ""),
+            patch.object(bot, "PTERORELAY_AGENT_SECRET", ""), patch.dict(os.environ, {}, clear=True),
         ):
-            with self.assertRaisesRegex(RuntimeError, "DISCORD_TOKEN.*PANEL_PUBLIC_URL.*PTEROSYNC_AGENT_ID.*PTEROSYNC_AGENT_SECRET"):
+            with self.assertRaisesRegex(RuntimeError, "DISCORD_TOKEN.*PANEL_PUBLIC_URL.*PTERORELAY_AGENT_ID.*PTERORELAY_AGENT_SECRET"):
                 bot.validate_environment()
 
     def test_unlinked_servers_are_refused_before_any_request(self):

@@ -1,0 +1,46 @@
+{
+  "$schema": "./node_modules/@pterodactyl/sdk/manifest.schema.json",
+  "id": "pterorelay-discord",
+  "name": "PteroRelay Discord",
+  "version": "0.6.0-beta.1",
+  "description": "Discord management and game integration for Pterodactyl servers.",
+  "author": "PteroRelay contributors",
+  "requires": {
+    "panel": "^2.0.0-dev",
+    "sdk": "^2.0.0-beta.4",
+    "php": "^8.3"
+  },
+  "provider": "PteroRelay\\PteroRelayProvider",
+  "autoload": {
+    "PteroRelay\\": "src"
+  },
+  "routes": {
+    "root": ["pterorelay-agent"]
+  },
+  "ui": {
+    "entry": "dist/client.js",
+    "mode": "native",
+    "prefix": "prelay",
+    "screens": [
+      {
+        "id": "account-settings",
+        "area": "account",
+        "path": "pterorelay",
+        "nav": { "label": "PteroRelay", "icon": "settings" }
+      },
+      {
+        "id": "server-settings",
+        "area": "server",
+        "path": "discord",
+        "permission": ["ext.pterorelay-discord.view"],
+        "nav": { "label": "Discord", "icon": "message-circle" }
+      },
+      {
+        "id": "admin-settings",
+        "area": "admin",
+        "path": "pterorelay",
+        "nav": { "label": "PteroRelay", "icon": "settings" }
+      }
+    ]
+  }
+}

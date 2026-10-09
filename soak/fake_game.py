@@ -1,6 +1,6 @@
-"""A fake game server for the PteroSync soak test.
+"""A fake game server for the PteroRelay soak test.
 
-Runs on Wings like any game (the "PteroSync Soak" egg) and writes console lines the
+Runs on Wings like any game (the "PteroRelay Soak" egg) and writes console lines the
 way Minecraft Java, Terraria or Valheim do: numbered player chat, joins, leaves and
 deaths, with tricky messages mixed in. Every chat line carries a sequence number and
 the time it was written, so the checker bot can find lost, duplicated and slow
@@ -137,7 +137,7 @@ def handle_command(command: str) -> bool:
 def main() -> int:
     random.seed()
     counters = load_counters()
-    emit(f"PteroSync soak server ({DIALECT}, tag {TAG}) starting at chat #{counters['chat'] + 1}")
+    emit(f"PteroRelay soak server ({DIALECT}, tag {TAG}) starting at chat #{counters['chat'] + 1}")
     ready()
     online: list[str] = []
     next_line = time.monotonic() + random.uniform(1, INTERVAL)

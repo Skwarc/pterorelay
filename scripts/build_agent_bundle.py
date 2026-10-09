@@ -1,6 +1,6 @@
 """Build the agent bundle the extension serves to agents hosted as Pterodactyl servers.
 
-    python scripts/build_agent_bundle.py pterosync-discord/resources/agent/pterosync-agent.zip
+    python scripts/build_agent_bundle.py pterorelay-discord/resources/agent/pterorelay-agent.zip
 
 The zip holds the agent runtime and a VERSION file with the extension version, and
 is deterministic so identical sources give an identical archive.
@@ -27,7 +27,7 @@ def bundle_files() -> list[Path]:
 
 
 def build(output: Path) -> str:
-    version = json.loads((ROOT / "pterosync-discord" / "extension.json").read_text(encoding="utf-8"))["version"]
+    version = json.loads((ROOT / "pterorelay-discord" / "extension.json").read_text(encoding="utf-8"))["version"]
     output.parent.mkdir(parents=True, exist_ok=True)
     with ZipFile(output, "w", ZIP_DEFLATED, compresslevel=9) as archive:
         entries = [(path.relative_to(ROOT).as_posix(), path.read_bytes()) for path in bundle_files()]

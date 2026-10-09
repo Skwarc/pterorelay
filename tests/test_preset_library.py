@@ -10,7 +10,7 @@ from scripts.build_preset_index import INDEX_NAME, PRESET_DIR, build_index, rend
 
 def setup(**changes):
     data = {
-        "format": "pterosync-game", "version": 1, "name": "Example", "description": "An example setup.",
+        "format": "pterorelay-game", "version": 1, "name": "Example", "description": "An example setup.",
         "author": "someone", "status": "unverified", "game": "generic",
         "overrides": {"in": {"line_prefix": "auto", "patterns": {"chat": "{player}: {message}"}}},
         "event_colors": None, "disabled_features": [],

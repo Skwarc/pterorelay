@@ -93,8 +93,8 @@ def validate(path: Path, games: set[str]) -> list[str]:
     if not isinstance(data, dict):
         return ["the file must contain a JSON object"]
     errors = []
-    if data.get("format") != "pterosync-game" or data.get("version") != 1:
-        errors.append('format must be "pterosync-game" and version 1 (use Export setup in the panel)')
+    if data.get("format") != "pterorelay-game" or data.get("version") != 1:
+        errors.append('format must be "pterorelay-game" and version 1 (use Export setup in the panel)')
     if data.get("game") not in games:
         errors.append(f"game must be one of the built-in presets: {', '.join(sorted(games))}")
     for key, limit in LIMITS.items():

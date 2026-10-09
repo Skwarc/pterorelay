@@ -1,6 +1,6 @@
 # Soak test
 
-Runs PteroSync for days with fake game servers instead of real players, and measures
+Runs PteroRelay for days with fake game servers instead of real players, and measures
 whether every message arrives once, how fast, and whether the agent's memory grows.
 
 - **Fake game servers** (`fake_game.py`) run on Wings like any game. They write
@@ -15,14 +15,14 @@ whether every message arrives once, how fast, and whether the agent's memory gro
   - relayed messages that pinged someone;
   - the agent's memory.
 
-Both run from one egg, `egg-pterosync-soak.json`, built by
+Both run from one egg, `egg-pterorelay-soak.json`, built by
 `python scripts/build_soak_egg.py` from the two scripts. Each fake server needs about
 20 MB of RAM and the checker about 60 MB.
 
 ## Setup
 
 1. **Checker bot.** In the [Discord Developer Portal](https://discord.com/developers/applications),
-   create a second application, for example "PteroSync Soak". Under **Bot**:
+   create a second application, for example "PteroRelay Soak". Under **Bot**:
    - turn on **Message Content Intent**;
    - copy the token;
    - copy the application ID (it is also the bot's user ID).
@@ -32,7 +32,7 @@ Both run from one egg, `egg-pterosync-soak.json`, built by
    `https://discord.com/oauth2/authorize?client_id=<application id>&scope=bot%20applications.commands&permissions=68608`
 2. **Channels.** One chat channel per fake server, for example `#soak-minecraft`,
    `#soak-terraria`, `#soak-valheim`, plus `#soak-report`.
-3. **Egg.** Admin → Nests → Import Egg → `soak/egg-pterosync-soak.json`.
+3. **Egg.** Admin → Nests → Import Egg → `soak/egg-pterorelay-soak.json`.
 4. **Fake servers.** Create three servers with the egg, 64 MB RAM each:
    - Role `game`;
    - Game `minecraft-java`, `terraria` or `valheim`.

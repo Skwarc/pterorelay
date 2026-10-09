@@ -10,9 +10,9 @@ from agent_client import AgentClient, DiscordActor
 class AgentClientTests(unittest.TestCase):
     def test_signature_matches_documented_wire_format(self):
         client = AgentClient("https://panel.example.com", "agent-id", "secret")
-        headers = client.signed_headers("POST", "/pterosync-agent/heartbeat", b"{}", timestamp=123, nonce="abc")
-        message = f"POST\n/pterosync-agent/heartbeat\n123\nabc\n{hashlib.sha256(b'{}').hexdigest()}".encode()
-        self.assertEqual(headers["X-PteroSync-Signature"], hmac.new(b"secret", message, hashlib.sha256).hexdigest())
+        headers = client.signed_headers("POST", "/pterorelay-agent/heartbeat", b"{}", timestamp=123, nonce="abc")
+        message = f"POST\n/pterorelay-agent/heartbeat\n123\nabc\n{hashlib.sha256(b'{}').hexdigest()}".encode()
+        self.assertEqual(headers["X-PteroRelay-Signature"], hmac.new(b"secret", message, hashlib.sha256).hexdigest())
 
     def test_actor_serialization_uses_string_ids(self):
         actor = DiscordActor("1", "2", ("3", "4"))
@@ -41,7 +41,7 @@ class FakeSession:
 
         class Context:
             async def __aenter__(self):
-                session.nonces.append(headers["X-PteroSync-Nonce"])
+                session.nonces.append(headers["X-PteroRelay-Nonce"])
                 if len(session.nonces) <= session.failures:
                     raise aiohttp.ClientOSError(104, "Connection reset by peer")
                 return FakeResponse()

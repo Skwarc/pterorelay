@@ -1,9 +1,18 @@
 # Changelog
 
-PteroSync follows [semantic versioning](https://semver.org/) from 1.0: within 1.x
+PteroRelay follows [semantic versioning](https://semver.org/) from 1.0: within 1.x
 there are no breaking changes to presets, the agent API or the extension settings.
 Every release ships the extension (`.pteroext`) and the agent bundle together; the
 agent updates itself to the extension's version.
+
+## 0.6.0 (beta)
+
+**Renamed from PteroSync to PteroRelay** (another Pterodactyl project already uses
+the old name). Everything was renamed: the extension is now `pterorelay-discord`, its
+tables `ext_pterorelay_*`, the agent's settings `PTERORELAY_AGENT_ID` and
+`PTERORELAY_AGENT_SECRET`, and the agent route `/pterorelay-agent`. There is no
+automatic upgrade from PteroSync: uninstall the old extension and the old agent
+server, install PteroRelay, deploy the agent again and link your servers again.
 
 ## 0.5.0 (beta)
 
@@ -25,7 +34,7 @@ and give roles access in the panel instead. The Docker files are now
 
 ## 0.4.0 (beta)
 
-- **Setup checklist** in Admin → PteroSync: token check, invite link, intent, guild and
+- **Setup checklist** in Admin → PteroRelay: token check, invite link, intent, guild and
   channel permission checks.
 - **Diagnostics:** the agent reports relay problems and missing permissions to the panel.
 - **Version checks** and "Update available".
@@ -40,7 +49,7 @@ and give roles access in the panel instead. The Docker files are now
 
 ## 0.3.0 (beta)
 
-- **Run the agent as a Pterodactyl server:** the PteroSync Agent egg and a **Deploy
+- **Run the agent as a Pterodactyl server:** the PteroRelay Agent egg and a **Deploy
   agent** button; the agent installs and updates itself from the panel and never
   controls its own server.
 - Link codes (`/link`) so non-admin server owners can link their own Discord server.

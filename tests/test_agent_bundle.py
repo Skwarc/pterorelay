@@ -16,7 +16,7 @@ class AgentBundleTests(unittest.TestCase):
             with ZipFile(output) as archive:
                 names = set(archive.namelist())
                 self.assertEqual(archive.read("VERSION").decode().strip(), version)
-        expected = json.loads((ROOT / "pterosync-discord" / "extension.json").read_text(encoding="utf-8"))["version"]
+        expected = json.loads((ROOT / "pterorelay-discord" / "extension.json").read_text(encoding="utf-8"))["version"]
         self.assertEqual(version, expected)
         for name in ("bot.py", "agent_client.py", "chat_relay.py", "i18n.py", "update_agent.py",
                      "requirements.txt", "adapters/engine.py", "adapters/presets/minecraft-java.json"):

@@ -5,7 +5,7 @@
 Please **do not open a public issue** for security problems. Report them privately
 through GitHub: open the repository's **Security** tab → **Report a vulnerability**.
 
-Include what you found, how to reproduce it, and the PteroSync, panel and Wings
+Include what you found, how to reproduce it, and the PteroRelay, panel and Wings
 versions. You will get a reply within 7 days. Fixes are released as soon as possible
 and credited in the changelog unless you prefer otherwise.
 
@@ -14,9 +14,9 @@ and credited in the changelog unless you prefer otherwise.
 Only the latest release receives security fixes. The agent updates itself to the
 extension's version when it restarts, so updating the extension updates both.
 
-## What PteroSync protects
+## What PteroRelay protects
 
-PteroSync is used by hosting companies whose customers each link their own Discord
+PteroRelay is used by hosting companies whose customers each link their own Discord
 server, so the main boundaries are between customers and between Discord and the panel:
 
 - A customer can only see and configure their own servers, and only the Discord servers

@@ -1,4 +1,4 @@
-"""Write soak/egg-pterosync-soak.json from soak/fake_game.py and soak/checker.py.
+"""Write soak/egg-pterorelay-soak.json from soak/fake_game.py and soak/checker.py.
 
 The egg's install script carries both files, so the soak servers need no network
 access besides Discord (and pip, for the checker).
@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SOAK = ROOT / "soak"
-EGG = SOAK / "egg-pterosync-soak.json"
+EGG = SOAK / "egg-pterorelay-soak.json"
 FILES = ("fake_game.py", "checker.py")
 
 STARTUP = (
@@ -31,25 +31,25 @@ def variable(name: str, env: str, description: str, default: str, rules: str) ->
 
 
 def install_script() -> str:
-    lines = ["#!/bin/bash", "# PteroSync Soak installer: writes the soak scripts.", "set -euo pipefail",
+    lines = ["#!/bin/bash", "# PteroRelay Soak installer: writes the soak scripts.", "set -euo pipefail",
              "mkdir -p /mnt/server", "cd /mnt/server"]
     for name in FILES:
         # Unix line endings whatever the checkout uses (Git for Windows writes CRLF), so the
         # egg is the same on every machine and the scripts run on Linux.
         encoded = base64.b64encode((SOAK / name).read_bytes().replace(b"\r\n", b"\n")).decode()
         lines.append(f"echo '{encoded}' | base64 -d > {name}")
-    lines.append('echo "Installed the PteroSync soak scripts"')
+    lines.append('echo "Installed the PteroRelay soak scripts"')
     return "\n".join(lines) + "\n"
 
 
 def egg() -> dict:
     return {
-        "_comment": "PteroSync Soak: fake game servers and a checker bot for testing PteroSync. Not a game.",
+        "_comment": "PteroRelay Soak: fake game servers and a checker bot for testing PteroRelay. Not a game.",
         "meta": {"version": "PTDL_v2", "update_url": None},
         "exported_at": "2026-10-08T00:00:00+00:00",
-        "name": "PteroSync Soak",
-        "author": "noreply@pterosync.invalid",
-        "description": "Soak test for PteroSync: a fake game server that writes numbered chat, or the checker bot "
+        "name": "PteroRelay Soak",
+        "author": "noreply@pterorelay.invalid",
+        "description": "Soak test for PteroRelay: a fake game server that writes numbered chat, or the checker bot "
                        "that measures delivery in Discord. See soak/README.md.",
         "features": None,
         "docker_images": {"Python 3.11": "ghcr.io/parkervcp/yolks:python_3.11"},

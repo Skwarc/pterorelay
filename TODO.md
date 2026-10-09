@@ -1,6 +1,6 @@
 # TODO
 
-Goal: release PteroSync 1.0 (out of beta) for free on GitHub.
+Goal: release PteroRelay 1.0 (out of beta) for free on GitHub.
 
 ## Done
 
@@ -23,7 +23,7 @@ Goal: release PteroSync 1.0 (out of beta) for free on GitHub.
   missed. Done: `scripts/panel_check.py`, also in `release.py` and GitHub CI.
 - [x] **PHP feature tests** for the agent API (HMAC, nonce replay, own-server
   refusal, chat template check) and the server routes (permission checks,
-  link codes, admin-only fields). Done: `pterosync-discord/tests`, 33 tests.
+  link codes, admin-only fields). Done: `pterorelay-discord/tests`, 33 tests.
 - [x] **Panel check after upload:** `scripts/verify_panel.py`, or
   `release.py --panel URL`, waits until the panel serves the new version.
 - [ ] Extend the PHP tests to the admin routes, the heartbeat limits, `/logs` and
@@ -64,15 +64,15 @@ Goal: release PteroSync 1.0 (out of beta) for free on GitHub.
   Game list. At least the top five games are verified on real servers.
 
 ### Publish
-- [x] **Public GitHub repository** `Skwarc/pterosync` with a fresh history.
-- [x] The `repository` setting defaults to `Skwarc/pterosync`, so update checks and
+- [x] **Public GitHub repository** `Skwarc/pterorelay` with a fresh history.
+- [x] The `repository` setting defaults to `Skwarc/pterorelay`, so update checks and
   the preset library work without configuration.
-- [ ] Release assets on GitHub: the `.pteroext` and `pterosync-discord.zip` (built by
+- [ ] Release assets on GitHub: the `.pteroext` and `pterorelay-discord.zip` (built by
   CI from a `v*` tag), the agent bundle and the egg.
 - [x] `CHANGELOG.md`, `SECURITY.md`, `CONTRIBUTING.md`, `CLA.md`.
 - [x] Private vulnerability reporting on (GitHub → Security).
 - [ ] **CLA Assistant:** sign in at https://cla-assistant.io with GitHub, create a public
-  gist with the text of `CLA.md`, and link it to `Skwarc/pterosync`. Until then, code pull
+  gist with the text of `CLA.md`, and link it to `Skwarc/pterorelay`. Until then, code pull
   requests are not asked to accept the CLA; do not merge outside code before it is set up.
 - [ ] Issue templates (bug report with versions and Diagnostics, preset submission).
 - [x] **Compatibility statement** and **privacy note** in the README.

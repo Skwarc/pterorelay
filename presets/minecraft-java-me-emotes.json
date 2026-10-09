@@ -1,9 +1,9 @@
 {
-  "format": "pterosync-game",
+  "format": "pterorelay-game",
   "version": 1,
   "name": "Minecraft Java – with /me emotes",
   "description": "The built-in Minecraft Java preset plus /me emotes, which the server logs as \"* Name action\". The emote is posted in Discord as a chat message from that player.",
-  "author": "PteroSync contributors",
+  "author": "PteroRelay contributors",
   "status": "likely",
   "game": "minecraft-java",
   "overrides": {

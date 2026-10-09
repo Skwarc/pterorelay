@@ -1,7 +1,7 @@
 .git
 .gitignore
 .env
-.env.pterosync
+.env.pterorelay
 .env.example
 data
 tests

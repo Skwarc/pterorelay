@@ -1,11 +1,11 @@
 """Check that a panel runs this extension version after an upload.
 
-Polls the public ``/pterosync-agent/bundle/version`` route. The route only answers
+Polls the public ``/pterorelay-agent/bundle/version`` route. The route only answers
 when the panel booted the extension, so a matching version means the extension is
 enabled and serving the new build; a 404 or 5xx means it is disabled or failed.
 
 Usage: python scripts/verify_panel.py https://panel.example.com [--version X] [--wait 900]
-       (the URL may also come from PTEROSYNC_PANEL_URL)
+       (the URL may also come from PTERORELAY_PANEL_URL)
 """
 
 from __future__ import annotations
@@ -23,12 +23,12 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 def manifest_version() -> str:
-    return json.loads((ROOT / "pterosync-discord" / "extension.json").read_text(encoding="utf-8"))["version"]
+    return json.loads((ROOT / "pterorelay-discord" / "extension.json").read_text(encoding="utf-8"))["version"]
 
 
 def served_version(panel: str) -> tuple[int, str]:
-    request = urllib.request.Request(panel.rstrip("/") + "/pterosync-agent/bundle/version",
-                                     headers={"User-Agent": "PteroSync release check", "Cache-Control": "no-cache"})
+    request = urllib.request.Request(panel.rstrip("/") + "/pterorelay-agent/bundle/version",
+                                     headers={"User-Agent": "PteroRelay release check", "Cache-Control": "no-cache"})
     try:
         with urllib.request.urlopen(request, timeout=10) as response:
             return response.status, response.read(100).decode("utf-8", "replace").strip()
@@ -44,7 +44,7 @@ def verify(panel: str, version: str, wait: float, interval: float = 10) -> bool:
     while True:
         status, body = served_version(panel)
         if status == 200 and body == version:
-            print(f"OK: {panel} serves PteroSync {version}.")
+            print(f"OK: {panel} serves PteroRelay {version}.")
             return True
         state = (status, body)
         if state != last:
@@ -64,12 +64,12 @@ def verify(panel: str, version: str, wait: float, interval: float = 10) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("panel", nargs="?", default=os.environ.get("PTEROSYNC_PANEL_URL"))
+    parser.add_argument("panel", nargs="?", default=os.environ.get("PTERORELAY_PANEL_URL"))
     parser.add_argument("--version", default=None, help="expected version (default: extension.json)")
     parser.add_argument("--wait", type=float, default=0, help="seconds to keep polling for the upload")
     args = parser.parse_args()
     if not args.panel:
-        parser.error("give the panel URL or set PTEROSYNC_PANEL_URL")
+        parser.error("give the panel URL or set PTERORELAY_PANEL_URL")
     return 0 if verify(args.panel, args.version or manifest_version(), args.wait) else 1
 
 
