@@ -337,7 +337,7 @@ final readonly class AgentController
      * authenticated socket, while commands, power actions and install, backup and transfer
      * output each need a permission the token does not have.
      */
-    public function websocket(Request $request, Server $server, \Pterodactyl\Services\Nodes\NodeJWTService $jwt): JsonResponse
+    public function websocket(Request $request, Server $server): JsonResponse
     {
         $agent = $this->agent($request);
         abort_unless($this->relaysChat($agent, $server), 404);
@@ -347,12 +347,7 @@ final readonly class AgentController
         $owner = $server->user;
 
         $expiresAt = \Carbon\CarbonImmutable::now()->addMinutes(10);
-        $token = $jwt->setExpiresAt($expiresAt)
-            ->setUser($owner)
-            ->setClaims(['server_uuid' => $server->uuid, 'permissions' => ['websocket.connect']])
-            ->setScopes(\Pterodactyl\Enum\JwtScope::Websocket)
-            // The core websocket controller's identifier, so the panel's token revocations apply too.
-            ->handle($server->node, $owner->id.$server->uuid);
+        $token = self::websocketToken($server, $owner, $expiresAt);
         $socket = str_replace(['https://', 'http://'], ['wss://', 'ws://'], $server->node->getConnectionAddress());
 
         return new JsonResponse([
@@ -362,6 +357,26 @@ final readonly class AgentController
             // Wings only accepts websockets whose Origin is the panel URL from its configuration.
             'origin' => rtrim((string) config('app.url'), '/'),
         ]);
+    }
+
+    /**
+     * A Wings websocket token for the server owner with only websocket.connect. Panels from
+     * October 2026 issue node tokens with NodeJwt::issue(); older ones with the fluent
+     * NodeJWTService. The identifier is the core websocket controller's, so the panel's token
+     * revocations apply too.
+     */
+    private static function websocketToken(Server $server, \Pterodactyl\Models\User $owner, \Carbon\CarbonImmutable $expiresAt): \Lcobucci\JWT\UnencryptedToken
+    {
+        $claims = ['server_uuid' => $server->uuid, 'permissions' => ['websocket.connect']];
+        $identifier = $owner->id.$server->uuid;
+        $current = 'Pterodactyl\\Services\\Nodes\\NodeJwt';
+        if (class_exists($current)) {
+            return app($current)->issue($server->node, \Pterodactyl\Enum\JwtScope::Websocket, identifiedBy: $identifier,
+                expiresAt: $expiresAt, user: $owner, claims: $claims);
+        }
+
+        return app('Pterodactyl\\Services\\Nodes\\NodeJWTService')->setExpiresAt($expiresAt)->setUser($owner)->setClaims($claims)
+            ->setScopes(\Pterodactyl\Enum\JwtScope::Websocket)->handle($server->node, $identifier);
     }
 
     private function relaysChat(Agent $agent, Server $server): bool

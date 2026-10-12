@@ -14,6 +14,8 @@ agent updates itself to the extension's version.
   users with the console permissions). The Discord tab shows the relay as a switch with
   its state at the top of each linked Discord server.
 - Link codes can no longer be used twice by two requests at the same moment.
+- Works with the newest Panel 2.0 dev builds, which replaced the services for extension
+  settings and node tokens; older builds keep working.
 - Warnings and states in the panel now use the panel theme's colours (success, warning,
   destructive); before, they showed as plain text.
 

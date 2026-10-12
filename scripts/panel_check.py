@@ -58,6 +58,10 @@ def ensure_panel(update: bool) -> None:
     run(["docker", "build", "-q", "-t", IMAGE, str(CI)], stdout=subprocess.DEVNULL)
     if update or not (PANEL / "vendor" / "autoload.php").is_file():
         docker_run(["composer", "install", "--no-interaction", "--no-progress", "--no-scripts"])
+        # Without Composer's scripts Laravel's package cache is not rebuilt; a stale one lists
+        # providers of packages the panel no longer uses.
+        for cached in ("packages.php", "services.php"):
+            (PANEL / "bootstrap" / "cache" / cached).unlink(missing_ok=True)
 
 
 def mounts() -> list[str]:

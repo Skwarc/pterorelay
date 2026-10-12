@@ -316,3 +316,19 @@ test('the heartbeat prunes audit entries older than 90 days', function (): void 
     expect(DB::table('ext_pterorelay_audit_logs')->where('id', $old)->exists())->toBeFalse()
         ->and(DB::table('ext_pterorelay_audit_logs')->where('id', $recent)->exists())->toBeTrue();
 });
+
+test('the agent gets a websocket token that can only read the console', function (): void {
+    Support::bind($this->server, $this->guild);
+
+    $data = agentCall($this, $this->agent, 'GET', "/pterorelay-agent/servers/{$this->server->uuid}/websocket")->assertOk()->json();
+
+    expect($data['socket'])->toEndWith("/api/servers/{$this->server->uuid}/ws");
+    $claims = json_decode(base64_decode(strtr(explode('.', $data['token'])[1], '-_', '+/')), true);
+    expect($claims['permissions'])->toBe(['websocket.connect'])->and($claims['server_uuid'])->toBe($this->server->uuid);
+});
+
+test('no websocket token for servers without chat relay', function (): void {
+    Support::bind($this->server, $this->guild, ['chat_enabled' => false]);
+
+    agentCall($this, $this->agent, 'GET', "/pterorelay-agent/servers/{$this->server->uuid}/websocket")->assertNotFound();
+});
