@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from adapters.engine import GameEvent
 
+# Broadcast senders that are not players: the console, RCON and command blocks.
+SYSTEM_SENDERS = frozenset({"Server", "Rcon", "@"})
+
 
 class ConsoleTailer:
     """Returns only console lines not seen in the previous poll.
@@ -59,3 +62,14 @@ class PlayerTracker:
     @property
     def names(self) -> list[str]:
         return list(self.players)
+
+    def plausible(self, event: GameEvent) -> bool:
+        """Whether an event really comes from the game.
+
+        A `/say` from a player prints `[Name] message`, and so do mods and plugins logging
+        `[ModTag] something`. A broadcast with a sender name only counts when the sender is
+        the console (`Server`, `Rcon`, `@` for command blocks) or a player who is online.
+        """
+        if event.kind != "broadcast" or not event.player:
+            return True
+        return event.player in SYSTEM_SENDERS or event.player in self.players

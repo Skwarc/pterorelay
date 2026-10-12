@@ -295,3 +295,29 @@ test('turning the relay on or changing its patterns needs console read access', 
     $otherBinding = Support::bind($other, $this->guild, ['chat_enabled' => false]);
     $this->actingAs($reader)->putJson(settingsUrl($other, "/{$otherBinding}/integration"), integration())->assertNoContent();
 });
+
+test('linking turns the relay on with the game suggested by the egg', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    $this->agent->forceFill(['adapters' => json_encode([
+        ['id' => 'minecraft-java', 'match' => ['eggs' => [$server->egg->name]], 'defaults' => ['out' => ['template' => 'tellraw @a {json}']]],
+    ])])->save();
+    linkCode($this->guild);
+
+    $id = $this->actingAs($owner)->postJson(settingsUrl($server), ['code' => 'ABCDE23456'])->assertCreated()->json('id');
+
+    $binding = DB::table('ext_pterorelay_server_guild')->where('id', $id)->first();
+    expect($binding->game_adapter)->toBe('minecraft-java')->and((bool) $binding->chat_enabled)->toBeTrue();
+});
+
+test('linking leaves the relay off for users who may not read or command the console', function (): void {
+    [$user, $server] = $this->generateTestAccount(['ext.pterorelay-discord.configure']);
+    $this->agent->forceFill(['adapters' => json_encode([
+        ['id' => 'minecraft-java', 'match' => ['eggs' => [$server->egg->name]], 'defaults' => ['out' => ['template' => 'tellraw @a {json}']]],
+    ])])->save();
+    linkCode($this->guild);
+
+    $id = $this->actingAs($user)->postJson(settingsUrl($server), ['code' => 'ABCDE23456'])->assertCreated()->json('id');
+
+    $binding = DB::table('ext_pterorelay_server_guild')->where('id', $id)->first();
+    expect($binding->game_adapter)->toBeNull()->and((bool) $binding->chat_enabled)->toBeFalse();
+});

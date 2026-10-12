@@ -88,8 +88,8 @@ Goal: release PteroRelay 1.0 (out of beta) for free on GitHub.
   `ALLOW_INSECURE_PANEL=1`, like the updater.
 - [ ] Reject broadcast templates without fixed text before the placeholder (`{line}`)
   or without a placeholder; show what an imported setup changes in `out`.
-- [ ] Link code redemption: proceed only if deleting the code removed one row (two
-  parallel requests can both use a code); refuse codes for guilds the bot has left.
+- [x] Link code redemption is atomic (deleting the code is the claim).
+- [ ] Refuse link codes for guilds the bot has left.
 - [ ] Stop console access (`relaysChat`, `authorizeDiscord`) for guilds with `left_at`.
 - [ ] Optionally a per-agent "shared" flag so private bots are not offered to every
   customer as invites.

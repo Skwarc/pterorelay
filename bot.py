@@ -332,6 +332,9 @@ async def relay_console_lines(
                 continue
             if index == 0:
                 tracker.apply(event)
+            if not tracker.plausible(event):
+                logger.debug("Console %s line dropped: %s is not online, so it is not a /say", server_id, event.player)
+                continue
             if not feature_enabled(binding, EVENT_FEATURES.get(event.kind, event.kind)):
                 continue
             if delivered >= limit:

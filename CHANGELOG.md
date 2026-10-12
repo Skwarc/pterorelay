@@ -7,6 +7,16 @@ agent updates itself to the extension's version.
 
 ## 0.6.0 (beta)
 
+- Mod and plugin log lines like `[SW] onEntityInteract fired…` are no longer relayed
+  as server messages: a `[Name] message` line counts as a `/say` only when Name is
+  `Server`, `Rcon`, `@` or a player who is online.
+- Linking a server turns the chat relay on with the game suggested by its egg (for
+  users with the console permissions). The Discord tab shows the relay as a switch with
+  its state at the top of each linked Discord server.
+- Link codes can no longer be used twice by two requests at the same moment.
+- Warnings and states in the panel now use the panel theme's colours (success, warning,
+  destructive); before, they showed as plain text.
+
 **Renamed from PteroSync to PteroRelay** (another Pterodactyl project already uses
 the old name). Everything was renamed: the extension is now `pterorelay-discord`, its
 tables `ext_pterorelay_*`, the agent's settings `PTERORELAY_AGENT_ID` and

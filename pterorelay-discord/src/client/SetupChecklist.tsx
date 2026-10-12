@@ -99,7 +99,7 @@ export function SetupChecklist({ overview }: { overview: OverviewInfo }) {
         },
     ];
     const icon = (ok: boolean | null) => ok === null ? '○' : ok ? '✓' : '✗';
-    const tone = (ok: boolean | null) => ok === null ? 'prelay:text-muted-foreground' : ok ? 'prelay:text-green-500' : 'prelay:text-red-500';
+    const tone = (ok: boolean | null) => ok === null ? 'prelay:text-muted-foreground' : ok ? 'prelay:text-success' : 'prelay:text-destructive';
     return <section className={card}>
         <h2 className="prelay:text-lg prelay:font-semibold">Setup checklist</h2>
         <ul className="prelay:grid prelay:gap-2 prelay:text-sm">{checks.map((check) => <li key={check.label} className="prelay:flex prelay:gap-3">

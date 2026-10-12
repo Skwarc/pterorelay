@@ -193,10 +193,10 @@ export default function AgentDeploy({ agents, invitePermissions, onDeployed }: {
             <button type="button" className="prelay:text-sm prelay:underline" onClick={downloadEgg}>Download the egg to import it yourself</button>
         </div>
         {tokenCheck && <div className="prelay:grid prelay:gap-1 prelay:text-sm">
-            <span className="prelay:text-green-500">✓ Token belongs to {tokenCheck.bot_name || tokenCheck.name}.</span>
+            <span className="prelay:text-success">✓ Token belongs to {tokenCheck.bot_name || tokenCheck.name}.</span>
             {tokenCheck.message_content
-                ? <span className="prelay:text-green-500">✓ Message Content intent is enabled.</span>
-                : <span className="prelay:text-red-500">✗ Message Content intent is off: enable it in the Developer Portal (Bot → Privileged Gateway Intents), or the bot will not start.</span>}
+                ? <span className="prelay:text-success">✓ Message Content intent is enabled.</span>
+                : <span className="prelay:text-destructive">✗ Message Content intent is off: enable it in the Developer Portal (Bot → Privileged Gateway Intents), or the bot will not start.</span>}
             <span>Add the bot to your Discord server: <a className="prelay:underline" href={tokenCheck.invite_url || inviteUrl(tokenCheck.application_id, invitePermissions)} target="_blank" rel="noreferrer">invite link</a>.</span>
         </div>}
         {replaceId && <p className="prelay:text-sm prelay:text-muted-foreground">
@@ -204,7 +204,7 @@ export default function AgentDeploy({ agents, invitePermissions, onDeployed }: {
             Stop that copy afterwards — it is still connected to Discord with the same bot token.
         </p>}
         {steps.length > 0 && <ol className="prelay:grid prelay:gap-1 prelay:text-sm">{steps.map((step) =>
-            <li key={step.label} className={step.state === 'failed' ? 'prelay:text-red-500' : ''}>
+            <li key={step.label} className={step.state === 'failed' ? 'prelay:text-destructive' : ''}>
                 <span className="prelay:inline-block prelay:w-5 prelay:font-mono">{icon[step.state]}</span>{step.label}
                 {step.detail && <span className="prelay:text-muted-foreground"> — {step.detail}</span>}
             </li>)}

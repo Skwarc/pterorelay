@@ -148,7 +148,7 @@ function timeAgo(iso: string | null | undefined): string {
 
 /** Warning above a linked Discord server's settings while its bot is offline or no longer in that Discord server. */
 function BotStatusBanner({ binding, onShowInvite }: { binding: Binding; onShowInvite: () => void }) {
-    const box = 'prelay:rounded-lg prelay:border prelay:border-yellow-500 prelay:bg-yellow-500/10 prelay:p-4 prelay:text-sm prelay:text-yellow-500';
+    const box = 'prelay:rounded-lg prelay:border prelay:border-warning prelay:bg-warning/10 prelay:p-4 prelay:text-sm prelay:text-warning';
     if (binding.agent_online === false) {
         return <p className={box} role="alert">⚠ {binding.guild_name}: The Discord bot is offline (last seen {timeAgo(binding.agent_last_seen_at)}). Chat relay and Discord commands are paused until it is back. If this lasts, contact your host.</p>;
     }
@@ -307,7 +307,7 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
     const suggested = binding.game_adapter ? null : adapters.find((item) => item.id === binding.suggested_adapter?.id) ?? null;
     const [adapterId, setAdapterId] = useState(binding.game_adapter ?? suggested?.id ?? '');
     const adapter = useMemo(() => adapters.find((item) => item.id === adapterId) ?? null, [adapters, adapterId]);
-    const [chatEnabled, setChatEnabled] = useState(binding.chat_enabled);
+    const [chatEnabled, setChatEnabled] = useState(binding.chat_enabled || (!binding.game_adapter && Boolean(suggested)));
     const [disabled, setDisabled] = useState<string[]>(binding.disabled_features ?? []);
     const toggleFeature = (feature: string) => setDisabled((current) => current.includes(feature) ? current.filter((item) => item !== feature) : [...current, feature]);
     const [channelId, setChannelId] = useState(binding.chat_channel_id ?? '');
@@ -326,6 +326,20 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
     const chosenChannel = channels.find((channel) => channel.discord_id === (channelId || binding.integration_channel_id));
     const defaultNotification = channels.find((channel) => channel.discord_id === binding.guild_notification_channel_id);
 
+    const toggleRelay = () => {
+        const next = !chatEnabled;
+        // Turning the relay on without a game picks the suggested one, so one click is enough.
+        if (next && !adapterId && suggested) selectAdapter(suggested.id);
+        setChatEnabled(next);
+    };
+    const relay: { tone: 'on' | 'off' | 'warn'; text: string } = !chatEnabled
+        ? { tone: 'off', text: 'Off. Turn it on to relay chat, joins, deaths and server events between Discord and the game.' }
+        : !adapter
+            ? { tone: 'warn', text: 'Select the game below to start relaying.' }
+            : !chosenChannel
+                ? { tone: 'warn', text: 'Select a chat channel below, or ask an administrator to set the integration channel.' }
+                : { tone: 'on', text: `Relaying ${adapter.name} chat and events with #${chosenChannel.name}.` };
+    const relayChanged = chatEnabled !== binding.chat_enabled || (adapterId || null) !== binding.game_adapter;
     const selectAdapter = (id: string) => {
         setAdapterId(id);
         if (!id) setChatEnabled(false);
@@ -455,7 +469,19 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
     return <div className="prelay:grid prelay:gap-4 prelay:rounded-lg prelay:border prelay:border-border prelay:bg-card prelay:p-6 prelay:text-foreground">
         <div className="prelay:flex prelay:flex-wrap prelay:items-center prelay:justify-between prelay:gap-2">
             <h2 className="prelay:text-lg prelay:font-semibold">{binding.guild_name} · Game integration</h2>
-            <button type="button" className="prelay:text-sm prelay:text-red-500 prelay:underline prelay:disabled:opacity-50" disabled={saving} onClick={() => void unlink()}>Unlink</button>
+            <button type="button" className="prelay:text-sm prelay:text-destructive prelay:underline prelay:disabled:opacity-50" disabled={saving} onClick={() => void unlink()}>Unlink</button>
+        </div>
+        <div className={`prelay:flex prelay:flex-wrap prelay:items-center prelay:gap-3 prelay:rounded-lg prelay:border prelay:p-4 ${relay.tone === 'on'
+            ? 'prelay:border-success/60 prelay:bg-success/10'
+            : relay.tone === 'warn' ? 'prelay:border-warning/60 prelay:bg-warning/10' : 'prelay:border-border prelay:bg-background'}`}>
+            <button type="button" role="switch" aria-checked={chatEnabled} aria-label="Chat relay" onClick={toggleRelay}
+                className={`prelay:relative prelay:h-7 prelay:w-12 prelay:shrink-0 prelay:rounded-full prelay:transition ${chatEnabled ? 'prelay:bg-success' : 'prelay:bg-muted-foreground/50'}`}>
+                <span className={`prelay:absolute prelay:top-1 prelay:h-5 prelay:w-5 prelay:rounded-full prelay:transition-all ${chatEnabled ? 'prelay:left-6 prelay:bg-success-foreground' : 'prelay:left-1 prelay:bg-background'}`} />
+            </button>
+            <div className="prelay:grid prelay:gap-0.5">
+                <span className="prelay:font-semibold">Chat relay {chatEnabled ? 'on' : 'off'}</span>
+                <span className="prelay:text-sm prelay:text-muted-foreground">{relay.text}{relayChanged ? ' Click Save integration to apply.' : ''}</span>
+            </div>
         </div>
         {adapters.length === 0 && <p className="prelay:text-sm prelay:text-muted-foreground">The Discord agent has not reported its game adapters yet. Update the agent and wait for its next heartbeat.</p>}
         <div className="prelay:grid prelay:gap-4 prelay:md:grid-cols-2">
@@ -484,7 +510,7 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
         </div>
         {adapter && <>
             {adapter.notes && <p className="prelay:text-sm prelay:text-muted-foreground">{adapter.notes}</p>}
-            {adapter.status && <p className={`prelay:text-sm ${adapter.status === 'verified' ? 'prelay:text-muted-foreground' : 'prelay:text-yellow-500'}`}>{adapter.status === 'verified' ? '✓ ' : '⚠ '}{STATUS_TEXT[adapter.status]}</p>}
+            {adapter.status && <p className={`prelay:text-sm ${adapter.status === 'verified' ? 'prelay:text-muted-foreground' : 'prelay:text-warning'}`}>{adapter.status === 'verified' ? '✓ ' : '⚠ '}{STATUS_TEXT[adapter.status]}</p>}
             <div className="prelay:flex prelay:flex-wrap prelay:gap-2">{FEATURE_ORDER.filter((feature) => adapter.capabilities.includes(feature)).map((feature) => {
                 const enabled = !disabled.includes(feature);
                 return <button key={feature} type="button" aria-pressed={enabled} title={enabled ? 'Enabled — click to turn off' : 'Disabled — click to turn on'}
@@ -497,11 +523,6 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
             })}
             </div>
         </>}
-        <label className="prelay:flex prelay:items-center prelay:gap-2 prelay:text-sm">
-            <input type="checkbox" checked={chatEnabled} onChange={() => setChatEnabled(!chatEnabled)} disabled={!adapterId} />
-            Relay chat and events between Discord and the server console
-        </label>
-        {chatEnabled && !chosenChannel && <p className="prelay:text-sm prelay:text-red-500">Select a chat channel or set the integration channel in Admin → PteroRelay.</p>}
         {chatEnabled && chosenChannel && !chosenChannel.can_webhook && <p className="prelay:text-sm prelay:text-muted-foreground">Without the Manage Webhooks permission, game messages are posted by the bot instead of under the player's name.</p>}
         <div className="prelay:flex prelay:flex-wrap prelay:gap-4">{(Object.keys(EVENT_DEFAULTS) as EventKey[]).map((key) =>
             <label key={key} className="prelay:flex prelay:items-center prelay:gap-2 prelay:text-sm prelay:capitalize">
@@ -511,7 +532,7 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
         {adapter && <div className="prelay:grid prelay:gap-3">
             <button type="button" className="prelay:w-fit prelay:text-sm prelay:underline" onClick={() => setShowAdvanced(!showAdvanced)}>{showAdvanced ? 'Hide' : 'Show'} advanced console settings</button>
             {showAdvanced && <div className="prelay:grid prelay:gap-3">
-                {!canConsole && <p className="prelay:text-sm prelay:text-yellow-500">⚠ The broadcast command settings run on the server console, so changing them requires the console permission on this server.</p>}
+                {!canConsole && <p className="prelay:text-sm prelay:text-warning">⚠ The broadcast command settings run on the server console, so changing them requires the console permission on this server.</p>}
                 <fieldset disabled={!canConsole} className="prelay:grid prelay:gap-3 prelay:disabled:opacity-60">
                 <label className="prelay:grid prelay:gap-1 prelay:text-sm">Broadcast command (variables: {'{line} {json} {author} {message} {role} {prefix} {label}'}; empty disables Discord → game)
                     <input className={monoClass} value={form.template} onChange={(event) => setForm({ ...form, template: event.target.value })} />
@@ -584,7 +605,7 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
                     <p className="prelay:text-sm">
                         <span className="prelay:font-medium">{entry.name}</span>
                         <span className="prelay:text-muted-foreground"> · {adapters.find((item) => item.id === entry.game)?.name ?? entry.game} · </span>
-                        <span className={entry.status === 'verified' ? 'prelay:text-muted-foreground' : 'prelay:text-yellow-500'}>{entry.status}</span>
+                        <span className={entry.status === 'verified' ? 'prelay:text-muted-foreground' : 'prelay:text-warning'}>{entry.status}</span>
                         {entry.author && <span className="prelay:text-muted-foreground"> · by {entry.author}</span>}
                     </p>
                     {entry.description && <p className="prelay:text-xs prelay:text-muted-foreground">{entry.description}</p>}

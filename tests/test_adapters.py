@@ -398,3 +398,30 @@ class RealConsoleLineTests(unittest.TestCase):
         statuses = {item["id"]: item["status"] for item in catalog()}
         self.assertEqual(statuses["minecraft-java"], "verified")
         self.assertTrue(all(status in {"verified", "likely", "unverified"} for status in statuses.values()))
+
+
+class ModLogLinesTests(unittest.TestCase):
+    """Mods and plugins log `[Tag] text`, which looks like a player's /say."""
+
+    LINE = ("[15:37:47] [Server thread/INFO] [in2bubble_simply_winged/]: [SW] onEntityInteract fired: "
+            "entity=goblin_trader, held=1 mysticalagriculture:tertium_pickaxe, clientSide=false")
+
+    def test_mod_debug_line_is_not_relayed_as_a_broadcast(self):
+        event = parse_line(resolve("minecraft-java"), self.LINE)
+        self.assertEqual((event.kind, event.player), ("broadcast", "SW"))
+        self.assertFalse(PlayerTracker().plausible(event))
+
+    def test_console_and_online_players_still_broadcast(self):
+        dialect = resolve("minecraft-java")
+        tracker = PlayerTracker()
+        tracker.apply(parse_line(dialect, "[12:00:00] [Server thread/INFO]: Steve joined the game"))
+        for line in ("[12:00:01] [Server thread/INFO]: [Server] restart in 5 minutes",
+                     "[12:00:02] [Server thread/INFO]: [Rcon] backup done",
+                     "[12:00:03] [Server thread/INFO]: [Steve] hello everyone"):
+            self.assertTrue(tracker.plausible(parse_line(dialect, line)), line)
+        tracker.apply(parse_line(dialect, "[12:00:04] [Server thread/INFO]: Steve left the game"))
+        self.assertFalse(tracker.plausible(parse_line(dialect, "[12:00:05] [Server thread/INFO]: [Steve] gone")))
+
+    def test_events_without_a_sender_are_unaffected(self):
+        chat = parse_line(resolve("minecraft-java"), "[12:00:00] [Server thread/INFO]: <Alex> hi")
+        self.assertTrue(PlayerTracker().plausible(chat))

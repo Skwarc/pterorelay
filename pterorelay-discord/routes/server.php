@@ -332,7 +332,7 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
     return response()->noContent();
 });
 
-Route::post('/settings', function (Request $request, Server $server) use ($isAdmin) {
+Route::post('/settings', function (Request $request, Server $server) use ($isAdmin, $decode, $suggestAdapter) {
     abort_unless($request->user()->can('ext.pterorelay-discord.configure', $server), 403);
     $data = $request->validate([
         'code' => ['required_without:guild_id', 'nullable', 'string', 'max:32'],
@@ -342,7 +342,9 @@ Route::post('/settings', function (Request $request, Server $server) use ($isAdm
         $code = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $data['code']) ?? '');
         $link = DB::table('ext_pterorelay_link_codes')->where('code', $code)->where('expires_at', '>', now())->first();
         abort_if($link === null, 422, 'The link code is invalid or has expired. Create a new one with /link in Discord.');
-        DB::table('ext_pterorelay_link_codes')->where('id', $link->id)->delete();
+        // Deleting is the claim: of two requests with the same code, only one removes the row.
+        abort_unless(DB::table('ext_pterorelay_link_codes')->where('id', $link->id)->delete() === 1, 422,
+            'The link code is invalid or has expired. Create a new one with /link in Discord.');
         $guildId = (int) $link->guild_id;
     } else {
         abort_unless($isAdmin($request), 403, 'Use a link code from /link in Discord to link this server.');
@@ -352,8 +354,15 @@ Route::post('/settings', function (Request $request, Server $server) use ($isAdm
     $existing = DB::table('ext_pterorelay_server_guild')
         ->where('server_id', $server->id)->where('guild_id', $data['guild_id'])->first();
     if ($existing === null) {
+        // Start relaying right away with the game suggested by the egg, when the user may: the
+        // game decides the console command (console permission) and the relay reads the console.
+        $catalog = $decode(DB::table('ext_pterorelay_guilds as guild')->join('ext_pterorelay_agents as agent', 'agent.id', '=', 'guild.agent_id')
+            ->where('guild.id', $data['guild_id'])->value('agent.adapters'));
+        $suggested = is_array($catalog) && $request->user()->can('control.console', $server) ? $suggestAdapter($catalog, $server) : null;
+        $relay = $suggested !== null && $request->user()->can('websocket.connect', $server);
         $bindingId = DB::table('ext_pterorelay_server_guild')->insertGetId([
             'server_id' => $server->id, 'guild_id' => $data['guild_id'], 'enabled' => true,
+            'game_adapter' => $relay ? $suggested['id'] : null, 'chat_enabled' => $relay,
             'created_at' => now(), 'updated_at' => now(),
         ]);
 
