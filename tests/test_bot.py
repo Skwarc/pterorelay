@@ -203,5 +203,81 @@ class StatusOverviewTests(unittest.TestCase):
         self.assertEqual(lines, [r"🟢 **Survival\*** · Running · 👥 2 · 💬 Chat relay", "⚪ **Creative** · Unknown"])
 
 
+class InfoTests(unittest.TestCase):
+    BINDINGS = {
+        "aaaa1111": [{"discord_guild_id": "1", "chat_channel_id": "100", "chat_enabled": True, "address": "mc.example.com:25565"}],
+        "bbbb2222": [{"discord_guild_id": "1", "chat_channel_id": "200", "chat_enabled": True, "address": None}],
+        "cccc3333": [{"discord_guild_id": "2", "chat_channel_id": "300", "chat_enabled": True}],
+        # Relay off: its channel is just the Discord server's default and gives nobody access.
+        "dddd4444": [{"discord_guild_id": "1", "chat_channel_id": "400", "chat_enabled": False}],
+    }
+
+    def resolve(self, guild_id, channel_id, visible):
+        with patch.object(bot, "AGENT_BINDINGS", self.BINDINGS):
+            return bot.info_server_for(guild_id, channel_id, visible)
+
+    def test_chat_channel_wins(self):
+        self.assertEqual(self.resolve(1, 200, ["aaaa1111"]), "bbbb2222")
+        self.assertEqual(self.resolve(1, 100, ["aaaa1111", "bbbb2222"]), "aaaa1111")
+
+    def test_channel_of_a_server_with_relay_off_does_not_count(self):
+        self.assertIsNone(self.resolve(1, 400, ["aaaa1111", "bbbb2222"]))
+
+    def test_chat_channel_of_another_discord_server_is_ignored(self):
+        self.assertIsNone(self.resolve(1, 300, ["aaaa1111", "bbbb2222"]))
+
+    def test_single_visible_server(self):
+        self.assertEqual(self.resolve(1, 999, ["bbbb2222"]), "bbbb2222")
+
+    def test_ambiguous_or_none(self):
+        self.assertIsNone(self.resolve(1, 999, ["aaaa1111", "bbbb2222"]))
+        self.assertIsNone(self.resolve(1, 999, []))
+        self.assertIsNone(self.resolve(None, None, ["aaaa1111", "bbbb2222"]))
+
+    def test_address_prefers_this_discord_server(self):
+        bindings = {"aaaa1111": [{"discord_guild_id": "2", "address": "other:1"},
+                                 {"discord_guild_id": "1", "address": " play:2 "}]}
+        with patch.object(bot, "AGENT_BINDINGS", bindings):
+            self.assertEqual(bot.server_address("aaaa1111", 1), "play:2")
+            self.assertEqual(bot.server_address("aaaa1111", 3), "other:1")
+        with patch.object(bot, "AGENT_BINDINGS", self.BINDINGS):
+            self.assertIsNone(bot.server_address("bbbb2222", 1))
+
+    @staticmethod
+    def fields(embed):
+        return {field.name: field.value for field in embed.fields}
+
+    def test_embed_shows_address_as_code_and_players(self):
+        embed = bot.info_embed("Survival", "running", ["Alex", "Steve_1"], True, "mc.example.com:25565", 3700, "en")
+        fields = self.fields(embed)
+        self.assertEqual(embed.title, "🟢 Survival")
+        self.assertEqual(fields["🌐 Address"], "`mc.example.com:25565`")
+        self.assertEqual(fields["👥 Players (2)"], r"Alex, Steve\_1")
+        self.assertEqual(fields["📊 Status"], "Running")
+        self.assertEqual(fields["⏱️ Uptime"], "1h 1m")
+
+    def test_embed_missing_address_hints_at_panel(self):
+        fields = self.fields(bot.info_embed("Survival", "offline", None, False, None, 0, "en"))
+        self.assertIn("Discord", fields["🌐 Address"])
+        self.assertFalse(fields["🌐 Address"].startswith("`"))
+        self.assertEqual(fields["👥 Players"], "—")
+        sl = self.fields(bot.info_embed("Survival", "offline", None, False, "", 0, "sl"))
+        self.assertIn("panelu", sl["🌐 Naslov"])
+
+    def test_embed_partial_and_unknown_players(self):
+        partial = self.fields(bot.info_embed("S", "running", ["Alex"], False, "a:1", 0, "en"))
+        self.assertEqual(partial["👥 Players (1+ (since the agent started))"], "Alex")
+        unknown = self.fields(bot.info_embed("S", "running", None, False, "a:1", 0, "en"))
+        self.assertEqual(unknown["👥 Players"], "Unknown")
+        empty = self.fields(bot.info_embed("S", "running", [], True, "a:1", 0, "en"))
+        self.assertEqual(empty["👥 Players (0)"], "Nobody is online")
+
+    def test_info_keys_exist_in_every_language(self):
+        from i18n import MESSAGES
+        info_keys = {key for key in MESSAGES["en"] if key.startswith("info.")}
+        self.assertTrue(info_keys)
+        self.assertEqual(info_keys, {key for key in MESSAGES["sl"] if key.startswith("info.")})
+
+
 if __name__ == "__main__":
     unittest.main()

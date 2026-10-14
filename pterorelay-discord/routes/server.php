@@ -41,6 +41,17 @@ $suggestAdapter = static function (array $catalog, Server $server) use ($words):
     return null;
 };
 
+// Chat channels that other relaying links of a Discord server use: their own channel, else the
+// Discord server's integration channel. Two game servers relaying into one channel would mix chat.
+$usedChannels = static function (int $guildId, ?int $exceptBindingId = null): array {
+    return DB::table('ext_pterorelay_server_guild as binding')
+        ->join('ext_pterorelay_guilds as guild', 'guild.id', '=', 'binding.guild_id')
+        ->where('binding.guild_id', $guildId)->where('binding.enabled', true)->where('binding.chat_enabled', true)
+        ->when($exceptBindingId !== null, static fn ($query) => $query->where('binding.id', '!=', $exceptBindingId))
+        ->selectRaw('COALESCE(binding.chat_channel_id, guild.integration_channel_id) as channel')->get()
+        ->map(static fn (object $row): string => (string) ($row->channel ?? ''))->filter()->unique()->values()->all();
+};
+
 // The community preset library: presets/index.json and its files in a public GitHub repository,
 // served through jsDelivr. The repository is an extension setting; empty means not configured.
 $libraryBase = static function (): string {
@@ -105,7 +116,7 @@ $invites = static function () use ($decode): array {
     return $invites;
 };
 
-Route::get('/settings', function (Request $request, Server $server) use ($decode, $isAdmin, $suggestAdapter, $invites) {
+Route::get('/settings', function (Request $request, Server $server) use ($decode, $isAdmin, $suggestAdapter, $invites, $usedChannels) {
     abort_unless($request->user()->can('ext.pterorelay-discord.view', $server), 403);
     $bindings = DB::table('ext_pterorelay_server_guild as binding')
         ->join('ext_pterorelay_guilds as guild', 'guild.id', '=', 'binding.guild_id')
@@ -125,6 +136,8 @@ Route::get('/settings', function (Request $request, Server $server) use ($decode
         $binding->available_roles = DB::table('ext_pterorelay_discord_roles')->where('guild_id', $binding->guild_id)->orderByDesc('position')->get();
         $binding->available_channels = DB::table('ext_pterorelay_discord_channels')->where('guild_id', $binding->guild_id)->orderBy('position')
             ->get(['discord_id', 'name', 'can_send', 'can_webhook']);
+        // Only channel ids, never which server uses them: that may be another customer's.
+        $binding->used_channels = $usedChannels((int) $binding->guild_id, (int) $binding->id);
         $binding->adapters = $decode($binding->adapters) ?? [];
         $binding->adapter_config = $decode($binding->adapter_config);
         $binding->event_colors = $decode($binding->event_colors);
@@ -223,13 +236,13 @@ Route::put('/settings/{bindingId}/roles', function (Request $request, Server $se
     return response()->noContent();
 });
 
-Route::put('/settings/{bindingId}/integration', function (Request $request, Server $server, int $bindingId) use ($decode) {
+Route::put('/settings/{bindingId}/integration', function (Request $request, Server $server, int $bindingId) use ($decode, $usedChannels) {
     abort_unless($request->user()->can('ext.pterorelay-discord.configure', $server), 403);
     $binding = DB::table('ext_pterorelay_server_guild as binding')
         ->join('ext_pterorelay_guilds as guild', 'guild.id', '=', 'binding.guild_id')
         ->join('ext_pterorelay_agents as agent', 'agent.id', '=', 'guild.agent_id')
         ->where('binding.id', $bindingId)->where('binding.server_id', $server->id)
-        ->first(['binding.id', 'binding.guild_id', 'binding.adapter_config', 'binding.game_adapter', 'binding.chat_enabled', 'agent.adapters']);
+        ->first(['binding.id', 'binding.guild_id', 'binding.adapter_config', 'binding.game_adapter', 'binding.chat_enabled', 'guild.integration_channel_id', 'agent.adapters']);
     abort_if($binding === null, 404);
 
     $pattern = ['nullable', 'string', 'max:500'];
@@ -238,6 +251,8 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
         'chat_enabled' => ['required', 'boolean'],
         'chat_channel_id' => ['present', 'nullable', 'string', 'regex:/^\d{1,20}$/'],
         'notification_channel_id' => ['sometimes', 'nullable', 'string', 'regex:/^\d{1,20}$/'],
+        // Host name, IPv4 or [IPv6], with an optional port: what players type to connect.
+        'address' => ['sometimes', 'nullable', 'string', 'max:255', 'regex:/^(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9](?:[A-Za-z0-9.-]{0,253}[A-Za-z0-9])?)(:\d{1,5})?$/'],
         'event_colors' => ['present', 'nullable', 'array:join,leave,death,advancement,broadcast,server'],
         'event_colors.*' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         'disabled_features' => ['present', 'nullable', 'array', 'max:20'],
@@ -286,6 +301,16 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
         'The notification channel does not belong to this Discord server.',
     );
 
+    // Every game server relays into its own channel. The other server is not named: it may belong
+    // to another customer in the same Discord server. Without any channel the UI warns instead.
+    $resolvedChannel = $data['chat_channel_id'] ?? $binding->integration_channel_id;
+    if ((bool) $data['chat_enabled'] && $resolvedChannel !== null
+        && in_array((string) $resolvedChannel, $usedChannels((int) $binding->guild_id, $bindingId), true)) {
+        $name = DB::table('ext_pterorelay_discord_channels')->where('guild_id', $binding->guild_id)
+            ->where('discord_id', $resolvedChannel)->value('name');
+        abort(422, '#'.($name ?? $resolvedChannel).' is already used for chat by another server. Pick a channel for this server.');
+    }
+
     // The broadcast command runs on the server console for every Discord message. The game decides
     // the default command (and which characters are stripped from chat), so changing either needs
     // the console permission in Pterodactyl.
@@ -327,12 +352,13 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
         'updated_at' => now(),
         // Older clients do not send the field; leave the stored channel alone then.
         ...(array_key_exists('notification_channel_id', $data) ? ['notification_channel_id' => $data['notification_channel_id']] : []),
+        ...(array_key_exists('address', $data) ? ['address' => trim((string) $data['address']) === '' ? null : trim((string) $data['address'])] : []),
     ]);
 
     return response()->noContent();
 });
 
-Route::post('/settings', function (Request $request, Server $server) use ($isAdmin, $decode, $suggestAdapter) {
+Route::post('/settings', function (Request $request, Server $server) use ($isAdmin, $decode, $suggestAdapter, $usedChannels) {
     abort_unless($request->user()->can('ext.pterorelay-discord.configure', $server), 403);
     $data = $request->validate([
         'code' => ['required_without:guild_id', 'nullable', 'string', 'max:32'],
@@ -360,9 +386,14 @@ Route::post('/settings', function (Request $request, Server $server) use ($isAdm
             ->where('guild.id', $data['guild_id'])->value('agent.adapters'));
         $suggested = is_array($catalog) && $request->user()->can('control.console', $server) ? $suggestAdapter($catalog, $server) : null;
         $relay = $suggested !== null && $request->user()->can('websocket.connect', $server);
+        // The new link has no channel of its own yet. When another server already relays into the
+        // integration channel, the relay stays off (the game is still set) until the user picks a
+        // channel for this one.
+        $integrationChannel = DB::table('ext_pterorelay_guilds')->where('id', $data['guild_id'])->value('integration_channel_id');
+        $channelTaken = $integrationChannel !== null && in_array((string) $integrationChannel, $usedChannels($data['guild_id']), true);
         $bindingId = DB::table('ext_pterorelay_server_guild')->insertGetId([
             'server_id' => $server->id, 'guild_id' => $data['guild_id'], 'enabled' => true,
-            'game_adapter' => $relay ? $suggested['id'] : null, 'chat_enabled' => $relay,
+            'game_adapter' => $relay ? $suggested['id'] : null, 'chat_enabled' => $relay && !$channelTaken,
             'created_at' => now(), 'updated_at' => now(),
         ]);
 

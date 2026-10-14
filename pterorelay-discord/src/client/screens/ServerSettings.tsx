@@ -28,6 +28,10 @@ type Binding = {
     notification_channel_id?: string | null;
     /** The Discord server's notification channel, when the panel reports it. */
     guild_notification_channel_id?: string | null;
+    /** Where players connect (host or host:port), shown by /info in Discord. */
+    address?: string | null;
+    /** Chat channels other relaying servers of this Discord server use; ids only. */
+    used_channels?: string[];
     disabled_features: string[];
     /** Preset matching the server's egg or Docker image, only set while no game is chosen. */
     suggested_adapter?: { id: string; source: 'egg' | 'image'; value: string } | null;
@@ -312,6 +316,7 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
     const toggleFeature = (feature: string) => setDisabled((current) => current.includes(feature) ? current.filter((item) => item !== feature) : [...current, feature]);
     const [channelId, setChannelId] = useState(binding.chat_channel_id ?? '');
     const [notificationId, setNotificationId] = useState(binding.notification_channel_id ?? '');
+    const [address, setAddress] = useState(binding.address ?? '');
     const [colors, setColors] = useState<Record<EventKey, string>>({ ...EVENT_DEFAULTS, ...(binding.event_colors ?? {}) } as Record<EventKey, string>);
     const [form, setForm] = useState<Advanced>(() => advancedFrom(adapter?.defaults ?? {}, binding.adapter_config));
     const [showAdvanced, setShowAdvanced] = useState(false);
@@ -325,6 +330,11 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
     const defaultChannel = channels.find((channel) => channel.discord_id === binding.integration_channel_id);
     const chosenChannel = channels.find((channel) => channel.discord_id === (channelId || binding.integration_channel_id));
     const defaultNotification = channels.find((channel) => channel.discord_id === binding.guild_notification_channel_id);
+    // Every game server needs its own chat channel; the panel refuses one another server relays into.
+    const usedChannels = binding.used_channels ?? [];
+    const resolvedChannelId = channelId || binding.integration_channel_id;
+    const channelTaken = Boolean(resolvedChannelId) && usedChannels.includes(resolvedChannelId ?? '');
+    const takenText = 'This channel is also used by another server; pick one for this server.';
 
     const toggleRelay = () => {
         const next = !chatEnabled;
@@ -338,6 +348,7 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
             ? { tone: 'warn', text: 'Select the game below to start relaying.' }
             : !chosenChannel
                 ? { tone: 'warn', text: 'Select a chat channel below, or ask an administrator to set the integration channel.' }
+                : channelTaken ? { tone: 'warn', text: takenText }
                 : { tone: 'on', text: `Relaying ${adapter.name} chat and events with #${chosenChannel.name}.` };
     const relayChanged = chatEnabled !== binding.chat_enabled || (adapterId || null) !== binding.game_adapter;
     const selectAdapter = (id: string) => {
@@ -440,6 +451,7 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
                 chat_enabled: chatEnabled && Boolean(adapterId),
                 chat_channel_id: channelId || null,
                 notification_channel_id: notificationId || null,
+                address: address.trim() || null,
                 event_colors: Object.keys(changedColors).length ? changedColors : null,
                 disabled_features: disabled,
                 // Without the agent's catalogue the preset defaults are unknown; keep stored overrides untouched.
@@ -496,9 +508,14 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
             </label>
             <label className="prelay:grid prelay:gap-1 prelay:text-sm">Chat channel
                 <select className={fieldClass} value={channelId} onChange={(event) => setChannelId(event.target.value)}>
-                    <option value="">{defaultChannel ? `Integration channel (#${defaultChannel.name})` : 'Integration channel (not set)'}</option>
-                    {channels.filter((channel) => channel.can_send || channel.discord_id === channelId).map((channel) => <option key={channel.discord_id} value={channel.discord_id}>#{channel.name}{channel.can_webhook ? '' : ' (no webhook permission)'}</option>)}
+                    <option value="">{defaultChannel ? `Integration channel (#${defaultChannel.name})` : 'Integration channel (not set)'}{binding.integration_channel_id && usedChannels.includes(binding.integration_channel_id) ? ' (used by another server)' : ''}</option>
+                    {channels.filter((channel) => channel.can_send || channel.discord_id === channelId).map((channel) => {
+                        const used = usedChannels.includes(channel.discord_id);
+                        return <option key={channel.discord_id} value={channel.discord_id} disabled={used && channel.discord_id !== channelId}>
+                            #{channel.name}{used ? ' (used by another server)' : channel.can_webhook ? '' : ' (no webhook permission)'}</option>;
+                    })}
                 </select>
+                {channelTaken && <span className="prelay:text-xs prelay:text-warning">⚠ {takenText}</span>}
             </label>
             <label className="prelay:grid prelay:gap-1 prelay:text-sm">Notification channel
                 <select className={fieldClass} value={notificationId} onChange={(event) => setNotificationId(event.target.value)}>
@@ -506,6 +523,10 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
                     {channels.filter((channel) => channel.can_send || channel.discord_id === notificationId).map((channel) => <option key={channel.discord_id} value={channel.discord_id}>#{channel.name}{channel.can_send ? '' : ' (cannot send)'}</option>)}
                 </select>
                 <span className="prelay:text-xs prelay:text-muted-foreground">Where start, stop and crash messages for this server are posted.</span>
+            </label>
+            <label className="prelay:grid prelay:gap-1 prelay:text-sm">Server address
+                <input className={fieldClass} maxLength={255} placeholder="play.example.com" value={address} onChange={(event) => setAddress(event.target.value)} />
+                <span className="prelay:text-xs prelay:text-muted-foreground">Shown by /info in Discord so players know where to connect.</span>
             </label>
         </div>
         {adapter && <>

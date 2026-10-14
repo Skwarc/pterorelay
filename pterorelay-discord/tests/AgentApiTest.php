@@ -133,6 +133,17 @@ test('config resolves each server\'s notification channel over the Discord serve
         ->and($servers[$other->uuid]['notification_channel_id'])->toBe('444444444444444444');
 });
 
+test('config includes the address players connect to', function (): void {
+    [, $other] = $this->generateTestAccount();
+    Support::bind($this->server, $this->guild, ['address' => 'play.example.com:25565']);
+    Support::bind($other, $this->guild);
+
+    $servers = collect(agentCall($this, $this->agent, 'GET', '/pterorelay-agent/config')->assertOk()->json('servers'))->keyBy('uuid');
+
+    expect($servers[$this->server->uuid]['address'])->toBe('play.example.com:25565')
+        ->and($servers[$other->uuid]['address'])->toBeNull();
+});
+
 test('chat sends the broadcast command and audits it', function (): void {
     Support::bind($this->server, $this->guild);
 

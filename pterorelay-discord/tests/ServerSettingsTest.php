@@ -321,3 +321,100 @@ test('linking leaves the relay off for users who may not read or command the con
     $binding = DB::table('ext_pterorelay_server_guild')->where('id', $id)->first();
     expect($binding->game_adapter)->toBeNull()->and((bool) $binding->chat_enabled)->toBeFalse();
 });
+
+test('two servers in one Discord server cannot relay chat into the same channel', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    [, $other] = $this->generateTestAccount();
+    channel($this->guild, '444444444444444444', 'chat-a');
+    channel($this->guild, '555555555555555555', 'chat-b');
+    $taken = Support::bind($other, $this->guild, ['chat_channel_id' => '444444444444444444']);
+    $binding = Support::bind($server, $this->guild, ['chat_enabled' => false]);
+
+    $response = $this->actingAs($owner)->putJson(settingsUrl($server, "/{$binding}/integration"), integration(['chat_channel_id' => '444444444444444444']))
+        ->assertUnprocessable();
+    expect($response->getContent())->toContain('#chat-a is already used for chat by another server')
+        ->and($response->getContent())->not->toContain($other->name);
+    $this->actingAs($owner)->putJson(settingsUrl($server, "/{$binding}/integration"), integration(['chat_channel_id' => '555555555555555555']))
+        ->assertNoContent();
+
+    // A server that does not relay chat does not hold its channel.
+    DB::table('ext_pterorelay_server_guild')->where('id', $taken)->update(['chat_enabled' => false]);
+    $this->actingAs($owner)->putJson(settingsUrl($server, "/{$binding}/integration"), integration(['chat_channel_id' => '444444444444444444']))
+        ->assertNoContent();
+});
+
+test('two servers cannot both relay into the integration channel', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    [, $other] = $this->generateTestAccount();
+    channel($this->guild, '444444444444444444', 'integration');
+    DB::table('ext_pterorelay_guilds')->where('id', $this->guild)->update(['integration_channel_id' => '444444444444444444']);
+    Support::bind($other, $this->guild);
+    $binding = Support::bind($server, $this->guild, ['chat_enabled' => false]);
+
+    $this->actingAs($owner)->putJson(settingsUrl($server, "/{$binding}/integration"), integration())->assertUnprocessable();
+    $this->actingAs($owner)->putJson(settingsUrl($server, "/{$binding}/integration"), integration(['chat_enabled' => false]))->assertNoContent();
+});
+
+test('linking leaves the relay off when another server relays into the integration channel', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    [, $other] = $this->generateTestAccount();
+    $this->agent->forceFill(['adapters' => json_encode([
+        ['id' => 'minecraft-java', 'match' => ['eggs' => [$server->egg->name]], 'defaults' => ['out' => ['template' => 'tellraw @a {json}']]],
+    ])])->save();
+    DB::table('ext_pterorelay_guilds')->where('id', $this->guild)->update(['integration_channel_id' => '444444444444444444']);
+    Support::bind($other, $this->guild);
+    linkCode($this->guild);
+
+    $id = $this->actingAs($owner)->postJson(settingsUrl($server), ['code' => 'ABCDE23456'])->assertCreated()->json('id');
+
+    expect((bool) DB::table('ext_pterorelay_server_guild')->where('id', $id)->value('chat_enabled'))->toBeFalse();
+});
+
+test('the owner sees which chat channels other servers use, without their names', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    [, $other] = $this->generateTestAccount();
+    [, $third] = $this->generateTestAccount();
+    [, $quiet] = $this->generateTestAccount();
+    DB::table('ext_pterorelay_guilds')->where('id', $this->guild)->update(['integration_channel_id' => '444444444444444444']);
+    Support::bind($server, $this->guild, ['chat_channel_id' => '666666666666666666']);
+    Support::bind($other, $this->guild, ['chat_channel_id' => '555555555555555555']);
+    Support::bind($third, $this->guild);
+    Support::bind($quiet, $this->guild, ['chat_channel_id' => '777777777777777777', 'chat_enabled' => false]);
+
+    $response = $this->actingAs($owner)->getJson(settingsUrl($server))->assertOk();
+
+    expect($response->json('bindings.0.used_channels'))->toEqualCanonicalizing(['555555555555555555', '444444444444444444'])
+        ->and($response->getContent())->not->toContain($other->name)
+        ->and($response->getContent())->not->toContain($third->name);
+});
+
+test('the owner sets the address players connect to', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    $binding = Support::bind($server, $this->guild, ['chat_enabled' => false]);
+    $address = static fn (): ?string => DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('address');
+
+    $this->actingAs($owner)->putJson(settingsUrl($server, "/{$binding}/integration"), integration(['chat_enabled' => false, 'address' => ' play.example.com:25565 ']))
+        ->assertNoContent();
+    expect($address())->toBe('play.example.com:25565')
+        ->and($this->actingAs($owner)->getJson(settingsUrl($server))->json('bindings.0.address'))->toBe('play.example.com:25565');
+
+    // Clients that do not send the field keep the stored address.
+    $this->actingAs($owner)->putJson(settingsUrl($server, "/{$binding}/integration"), integration(['chat_enabled' => false]))->assertNoContent();
+    expect($address())->toBe('play.example.com:25565');
+    $this->actingAs($owner)->putJson(settingsUrl($server, "/{$binding}/integration"), integration(['chat_enabled' => false, 'address' => '[2001:db8::1]:7777']))
+        ->assertNoContent();
+    expect($address())->toBe('[2001:db8::1]:7777');
+    $this->actingAs($owner)->putJson(settingsUrl($server, "/{$binding}/integration"), integration(['chat_enabled' => false, 'address' => '']))->assertNoContent();
+    expect($address())->toBeNull();
+});
+
+test('an invalid server address is refused', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    $binding = Support::bind($server, $this->guild, ['chat_enabled' => false]);
+
+    foreach (['https://play.example.com', 'play example.com', 'play.example.com:port', '-bad.example.com'] as $invalid) {
+        $this->actingAs($owner)->putJson(settingsUrl($server, "/{$binding}/integration"), integration(['chat_enabled' => false, 'address' => $invalid]))
+            ->assertUnprocessable();
+    }
+    expect(DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('address'))->toBeNull();
+});

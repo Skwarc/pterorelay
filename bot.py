@@ -1162,6 +1162,133 @@ async def uptime_cmd(interaction: discord.Interaction, server_id: str):
     await interaction.followup.send(embed=embed)
 
 
+def chat_channel_server(guild_id: object, channel_id: object) -> str | None:
+    """The linked server whose game chat is relayed in this Discord channel.
+
+    Only relaying servers count: with chat off, the resolved channel may just be the Discord
+    server's default channel, and /info there must not open the server to everyone.
+    """
+    if guild_id is None or channel_id is None:
+        return None
+    for server_id, bindings in AGENT_BINDINGS.items():
+        for binding in bindings:
+            if (binding.get("discord_guild_id") == str(guild_id) and binding.get("chat_enabled") and binding.get("chat_channel_id")
+                    and str(binding["chat_channel_id"]) == str(channel_id)):
+                return server_id
+    return None
+
+
+def info_server_for(guild_id: object, channel_id: object, visible_server_ids: list[str]) -> str | None:
+    """Server for /info without a choice: the one whose chat channel this is, else the only visible one."""
+    in_channel = chat_channel_server(guild_id, channel_id)
+    if in_channel is not None:
+        return in_channel
+    return visible_server_ids[0] if len(visible_server_ids) == 1 else None
+
+
+def server_address(server_id: str, guild_id: object) -> str | None:
+    """The address set in the panel for this server, preferring this Discord server's binding."""
+    bindings = AGENT_BINDINGS.get(server_id, [])
+    ordered = sorted(bindings, key=lambda b: b.get("discord_guild_id") != str(guild_id))
+    for binding in ordered:
+        address = str(binding.get("address") or "").strip()
+        if address:
+            return address
+    return None
+
+
+def info_embed(name: str, state: str | None, players: list[str] | None, known: bool,
+               address: str | None, uptime_seconds: float, locale: str) -> discord.Embed:
+    """Shareable summary of one server: state, players, address and uptime."""
+    state_key = state if state in ("running", "offline", "starting", "stopping") else "unknown"
+    embed = discord.Embed(
+        title=f"{status_emoji(state)} {translate('info.title', locale, {'name': name})}",
+        color=status_color(state),
+    )
+    embed.add_field(name=f"📊 {translate('status.state', locale)}",
+                    value=translate(f"status.state_{state_key}", locale), inline=True)
+
+    if state != "running":
+        players_name, players_value = translate("info.players", locale), "—"
+    elif players is None:
+        players_name, players_value = translate("info.players", locale), translate("info.players_unknown", locale)
+    else:
+        count = str(len(players)) if known else translate("status.players_partial", locale, {"count": len(players)})
+        players_name = f"{translate('info.players', locale)} ({count})"
+        listed = ", ".join(discord.utils.escape_markdown(p) for p in players)
+        players_value = listed or translate("info.players_none", locale)
+        if len(players_value) > 1024:
+            players_value = players_value[:1020] + "..."
+    embed.add_field(name=f"👥 {players_name}", value=players_value, inline=True)
+
+    embed.add_field(name=f"⏱️ {translate('info.uptime', locale)}", value=format_uptime(uptime_seconds), inline=True)
+    clean = (address or "").replace("`", "").strip()
+    embed.add_field(name=f"🌐 {translate('info.address', locale)}",
+                    value=f"`{clean[:200]}`" if clean else translate("info.address_missing", locale), inline=False)
+    embed.set_footer(text="Pterodactyl Bot")
+    return embed
+
+
+@bot.tree.command(name="info", description="Show a server's state, players, address and uptime")
+@app_commands.describe(server="Select a server (defaults to this channel's game server)")
+@app_commands.autocomplete(server=server_autocomplete)
+async def info_cmd(interaction: discord.Interaction, server: str | None = None):
+    locale = interaction_locale(interaction)
+    in_channel = chat_channel_server(interaction.guild_id, interaction.channel_id)
+    if server is None:
+        visible = sorted(
+            ((sid, name) for sid, name in configured_servers().items() if has_server_access(interaction, sid)),
+            key=lambda item: item[1].lower(),
+        )
+        server = info_server_for(interaction.guild_id, interaction.channel_id, [sid for sid, _ in visible])
+        if server is None:
+            if not visible:
+                message = f"ℹ️ {tr(interaction, 'info.no_servers')}"
+            else:
+                names = ", ".join(f"**{discord.utils.escape_markdown(name)}**" for _, name in visible[:10])
+                message = f"ℹ️ {tr(interaction, 'info.pick_server', servers=names + (', …' if len(visible) > 10 else ''))}"
+            return await interaction.response.send_message(
+                embed=simple_embed(message, discord.Color.yellow()), ephemeral=True)
+    if not (has_server_access(interaction, server) or server == in_channel):
+        return await interaction.response.send_message(
+            embed=simple_embed(f"❌ {tr(interaction, 'access.denied')}", discord.Color.red()), ephemeral=True)
+
+    name = configured_servers().get(server, server)
+    state = cached_state(server)
+    deferred = False
+    if state is None:
+        await interaction.response.defer()
+        deferred = True
+        error = None
+        try:
+            status = await get_server_status(server)
+            STATUS_CACHE[server] = (datetime.now(timezone.utc).timestamp(), status)
+            state = status.get("current_state")
+        except aiohttp.ClientResponseError as exc:
+            error = translate("status.error", locale, {"message": error_msg(exc, locale)})
+        except (aiohttp.ClientError, asyncio.TimeoutError):
+            error = translate("server.unreachable", locale)
+        if error is not None:
+            logger.warning("/info could not fetch the status of %s: %s", server, error)
+            # The deferred reply is public; replace it with a private error.
+            try:
+                await interaction.delete_original_response()
+            except discord.HTTPException:
+                pass
+            return await interaction.followup.send(
+                embed=simple_embed(f"⚠️ {error}", discord.Color.dark_gray()), ephemeral=True)
+
+    tracker = tracked_players(server)
+    players = list(tracker.names) if tracker is not None else None
+    known = bool(tracker is not None and tracker.known)
+    embed = info_embed(name, state, players, known, server_address(server, interaction.guild_id),
+                       get_current_uptime(load_config(), server), locale)
+    if deferred:
+        await interaction.followup.send(embed=embed)
+    else:
+        await interaction.response.send_message(embed=embed)
+
+
 @bot.tree.command(name="console", description="Send an authorized command to the game server console")
 @app_commands.describe(server_id="Select a server", command="A single console command")
 @app_commands.autocomplete(server_id=server_autocomplete)
