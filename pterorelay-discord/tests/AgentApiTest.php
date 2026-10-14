@@ -343,3 +343,11 @@ test('no websocket token for servers without chat relay', function (): void {
 
     agentCall($this, $this->agent, 'GET', "/pterorelay-agent/servers/{$this->server->uuid}/websocket")->assertNotFound();
 });
+
+test('config hands the mod download link to the agent', function (): void {
+    Support::bind($this->server, $this->guild, ['mods_url' => 'https://modrinth.com/modpack/example']);
+
+    $servers = agentCall($this, $this->agent, 'GET', '/pterorelay-agent/config')->assertOk()->json('servers');
+
+    expect($servers[0]['mods_url'])->toBe('https://modrinth.com/modpack/example');
+});

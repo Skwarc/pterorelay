@@ -9,7 +9,8 @@ agent updates itself to the extension's version.
 
 - **`/info`** shows a server's state, the players online, uptime and its address. In a
   server's own chat channel it needs no server choice and works for everyone there.
-- **Server address** field in the server's Discord tab, shown by `/info`.
+- **Server address** and **Mod download link** fields in the server's Discord tab, shown by
+  `/info` (the link as a Download mods button; https only).
 - **Each game server needs its own chat channel** in a Discord server: a channel another
   relaying server uses is refused and marked in the channel list.
 - Mod and plugin log lines like `[SW] onEntityInteract fired…` are no longer relayed

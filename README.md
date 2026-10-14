@@ -110,7 +110,8 @@ If a step fails, the step list shows which one. The manual route is:
    server's start, stop and crash messages go (default: the Discord server's).
    Each game server needs its own **Chat channel**: a channel another server of the
    same Discord server already relays into is marked and cannot be picked. The
-   **Server address** (for example `play.example.com:25565`) is shown by `/info`.
+   **Server address** (for example `play.example.com:25565`) and the optional **Mod download
+   link** (an https page such as a CurseForge or Modrinth modpack) are shown by `/info`.
 6. To disconnect a Discord server, click **Unlink** next to its name; its roles and
    settings for this game server are deleted.
 
@@ -185,7 +186,7 @@ when the Message Content intent is off.
 | `/start`, `/stop`, `/restart` | Power actions |
 | `/status` | State and resource usage of one server; without a server, a list of every linked server with state, players and chat relay |
 | `/uptime` | Recorded uptime |
-| `/info` | Shareable card with a server's state, players, address (set in the panel's **Discord** tab) and uptime; without a server it uses the game whose chat channel you are in, or your only visible server. In a server's own chat channel it works for everyone who can read that channel |
+| `/info` | Shareable card with a server's state, players, address and mod download button (set in the panel's **Discord** tab) and uptime; without a server it uses the game whose chat channel you are in, or your only visible server. In a server's own chat channel it works for everyone who can read that channel |
 | `/console` | Send a console command (requires the **Console** permission) |
 | `/settings` | Link to the server's settings in the panel |
 | `/link` | Create a code that links a panel server to this Discord server (*Manage Server* only) |

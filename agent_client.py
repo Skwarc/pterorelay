@@ -36,7 +36,7 @@ class ConsoleUnavailable(Exception):
 
 
 class AgentClient:
-    def __init__(self, panel_url: str, agent_id: str, secret: str, version: str = "0.6.0-beta.6"):
+    def __init__(self, panel_url: str, agent_id: str, secret: str, version: str = "0.6.0-beta.7"):
         self.base_url = panel_url.rstrip("/") + "/pterorelay-agent"
         self.agent_id = agent_id
         self.secret = secret.encode()

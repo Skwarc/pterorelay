@@ -1197,9 +1197,28 @@ def server_address(server_id: str, guild_id: object) -> str | None:
     return None
 
 
+def server_mods_url(server_id: str, guild_id: object) -> str | None:
+    """The mod download link set in the panel (https only), preferring this Discord server's binding."""
+    bindings = sorted(AGENT_BINDINGS.get(server_id, []), key=lambda b: b.get("discord_guild_id") != str(guild_id))
+    for binding in bindings:
+        url = str(binding.get("mods_url") or "").strip()
+        if url.startswith("https://") and len(url) <= 500 and not any(c in url for c in " <>`"):
+            return url
+    return None
+
+
+def info_view(mods_url: str | None, locale: str) -> discord.ui.View | None:
+    """A link button to the mod download page, when one is set."""
+    if not mods_url:
+        return None
+    view = discord.ui.View(timeout=None)
+    view.add_item(discord.ui.Button(label=translate("info.mods_download", locale), url=mods_url, emoji="📦"))
+    return view
+
+
 def info_embed(name: str, state: str | None, players: list[str] | None, known: bool,
-               address: str | None, uptime_seconds: float, locale: str) -> discord.Embed:
-    """Shareable summary of one server: state, players, address and uptime."""
+               address: str | None, uptime_seconds: float, locale: str, mods_url: str | None = None) -> discord.Embed:
+    """Shareable summary of one server: state, players, address, mods and uptime."""
     state_key = state if state in ("running", "offline", "starting", "stopping") else "unknown"
     embed = discord.Embed(
         title=f"{status_emoji(state)} {translate('info.title', locale, {'name': name})}",
@@ -1225,6 +1244,9 @@ def info_embed(name: str, state: str | None, players: list[str] | None, known: b
     clean = (address or "").replace("`", "").strip()
     embed.add_field(name=f"🌐 {translate('info.address', locale)}",
                     value=f"`{clean[:200]}`" if clean else translate("info.address_missing", locale), inline=False)
+    if mods_url:
+        embed.add_field(name=f"📦 {translate('info.mods', locale)}",
+                        value=f"[{translate('info.mods_download', locale)}]({mods_url})", inline=False)
     embed.set_footer(text="Pterodactyl Bot")
     return embed
 
@@ -1281,12 +1303,15 @@ async def info_cmd(interaction: discord.Interaction, server: str | None = None):
     tracker = tracked_players(server)
     players = list(tracker.names) if tracker is not None else None
     known = bool(tracker is not None and tracker.known)
+    mods_url = server_mods_url(server, interaction.guild_id)
     embed = info_embed(name, state, players, known, server_address(server, interaction.guild_id),
-                       get_current_uptime(load_config(), server), locale)
+                       get_current_uptime(load_config(), server), locale, mods_url)
+    view = info_view(mods_url, locale)
+    extra = {"view": view} if view is not None else {}
     if deferred:
-        await interaction.followup.send(embed=embed)
+        await interaction.followup.send(embed=embed, **extra)
     else:
-        await interaction.response.send_message(embed=embed)
+        await interaction.response.send_message(embed=embed, **extra)
 
 
 @bot.tree.command(name="console", description="Send an authorized command to the game server console")

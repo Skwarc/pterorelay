@@ -252,6 +252,7 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
         'chat_channel_id' => ['present', 'nullable', 'string', 'regex:/^\d{1,20}$/'],
         'notification_channel_id' => ['sometimes', 'nullable', 'string', 'regex:/^\d{1,20}$/'],
         // Host name, IPv4 or [IPv6], with an optional port: what players type to connect.
+        'mods_url' => ['sometimes', 'nullable', 'string', 'max:500', 'url:https'],
         'address' => ['sometimes', 'nullable', 'string', 'max:255', 'regex:/^(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9](?:[A-Za-z0-9.-]{0,253}[A-Za-z0-9])?)(:\d{1,5})?$/'],
         'event_colors' => ['present', 'nullable', 'array:join,leave,death,advancement,broadcast,server'],
         'event_colors.*' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
@@ -353,6 +354,7 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
         // Older clients do not send the field; leave the stored channel alone then.
         ...(array_key_exists('notification_channel_id', $data) ? ['notification_channel_id' => $data['notification_channel_id']] : []),
         ...(array_key_exists('address', $data) ? ['address' => trim((string) $data['address']) === '' ? null : trim((string) $data['address'])] : []),
+        ...(array_key_exists('mods_url', $data) ? ['mods_url' => trim((string) $data['mods_url']) === '' ? null : trim((string) $data['mods_url'])] : []),
     ]);
 
     return response()->noContent();

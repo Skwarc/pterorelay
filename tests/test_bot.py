@@ -281,3 +281,23 @@ class InfoTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class InfoModsTests(unittest.TestCase):
+    def test_mods_link_only_for_https(self):
+        bindings = {"aaaa1111": [{"discord_guild_id": "1", "mods_url": "https://www.curseforge.com/minecraft/modpacks/x"}],
+                    "bbbb2222": [{"discord_guild_id": "1", "mods_url": "javascript:alert(1)"}],
+                    "cccc3333": [{"discord_guild_id": "1", "mods_url": "http://example.com/mods"}]}
+        with patch.object(bot, "AGENT_BINDINGS", bindings):
+            self.assertEqual(bot.server_mods_url("aaaa1111", 1), "https://www.curseforge.com/minecraft/modpacks/x")
+            self.assertIsNone(bot.server_mods_url("bbbb2222", 1))
+            self.assertIsNone(bot.server_mods_url("cccc3333", 1))
+
+    def test_embed_and_button(self):
+        url = "https://modrinth.com/modpack/example"
+        embed = bot.info_embed("Survival", "running", [], True, "play.example.com", 60, "en", url)
+        self.assertIn(f"[Download mods]({url})", [field.value for field in embed.fields])
+        view = bot.info_view(url, "en")
+        self.assertEqual([(item.label, item.url) for item in view.children], [("Download mods", url)])
+        self.assertIsNone(bot.info_view(None, "en"))
+        self.assertNotIn("Mods", " ".join(field.name for field in bot.info_embed("S", "running", [], True, None, 0, "en").fields))

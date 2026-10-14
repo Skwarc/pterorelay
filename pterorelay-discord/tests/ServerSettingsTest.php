@@ -418,3 +418,18 @@ test('an invalid server address is refused', function (): void {
     }
     expect(DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('address'))->toBeNull();
 });
+
+test('the mod download link is saved, must be https and reaches the agent', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    $binding = Support::bind($server, $this->guild);
+    $url = settingsUrl($server, "/{$binding}/integration");
+
+    $this->actingAs($owner)->putJson($url, integration(['mods_url' => ' https://modrinth.com/modpack/example ']))->assertNoContent();
+    expect(DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('mods_url'))->toBe('https://modrinth.com/modpack/example');
+
+    foreach (['http://example.com/mods', 'javascript:alert(1)', 'not a url'] as $bad) {
+        $this->actingAs($owner)->putJson($url, integration(['mods_url' => $bad]))->assertUnprocessable();
+    }
+    $this->actingAs($owner)->putJson($url, integration(['mods_url' => '']))->assertNoContent();
+    expect(DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('mods_url'))->toBeNull();
+});

@@ -30,6 +30,7 @@ type Binding = {
     guild_notification_channel_id?: string | null;
     /** Where players connect (host or host:port), shown by /info in Discord. */
     address?: string | null;
+    mods_url?: string | null;
     /** Chat channels other relaying servers of this Discord server use; ids only. */
     used_channels?: string[];
     disabled_features: string[];
@@ -317,6 +318,7 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
     const [channelId, setChannelId] = useState(binding.chat_channel_id ?? '');
     const [notificationId, setNotificationId] = useState(binding.notification_channel_id ?? '');
     const [address, setAddress] = useState(binding.address ?? '');
+    const [modsUrl, setModsUrl] = useState(binding.mods_url ?? '');
     const [colors, setColors] = useState<Record<EventKey, string>>({ ...EVENT_DEFAULTS, ...(binding.event_colors ?? {}) } as Record<EventKey, string>);
     const [form, setForm] = useState<Advanced>(() => advancedFrom(adapter?.defaults ?? {}, binding.adapter_config));
     const [showAdvanced, setShowAdvanced] = useState(false);
@@ -452,6 +454,7 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
                 chat_channel_id: channelId || null,
                 notification_channel_id: notificationId || null,
                 address: address.trim() || null,
+                mods_url: modsUrl.trim() || null,
                 event_colors: Object.keys(changedColors).length ? changedColors : null,
                 disabled_features: disabled,
                 // Without the agent's catalogue the preset defaults are unknown; keep stored overrides untouched.
@@ -527,6 +530,10 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
             <label className="prelay:grid prelay:gap-1 prelay:text-sm">Server address
                 <input className={fieldClass} maxLength={255} placeholder="play.example.com" value={address} onChange={(event) => setAddress(event.target.value)} />
                 <span className="prelay:text-xs prelay:text-muted-foreground">Shown by /info in Discord so players know where to connect.</span>
+            </label>
+            <label className="prelay:grid prelay:gap-1 prelay:text-sm">Mod download link
+                <input className={fieldClass} type="url" maxLength={500} placeholder="https://www.curseforge.com/minecraft/modpacks/…" value={modsUrl} onChange={(event) => setModsUrl(event.target.value)} />
+                <span className="prelay:text-xs prelay:text-muted-foreground">Optional. Where players download the mods or modpack (https); /info shows a Download button.</span>
             </label>
         </div>
         {adapter && <>
