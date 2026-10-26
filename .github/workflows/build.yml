@@ -39,7 +39,12 @@ jobs:
       # Clones the panel into .panel (its SDK is not on npm yet), then runs PHPStan and the
       # extension's Pest tests against it in Docker with a MySQL container.
       - name: PHPStan and PHP tests against the panel
-        run: python scripts/panel_check.py
+        run: python scripts/panel_check.py --panel-ref 2.0-develop
+
+      # Users install tagged panel releases; check the newest one too. The frontend below is
+      # then built against that release's SDK.
+      - name: PHPStan and PHP tests against the latest panel release
+        run: python scripts/panel_check.py --panel-ref latest-release
 
       - name: Build the extension
         working-directory: pterorelay-discord

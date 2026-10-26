@@ -14,8 +14,9 @@ PteroRelay has two parts:
 
 ![Game integration settings of a server](docs/screenshots/game-integration.png)
 
-> **Beta.** PteroRelay targets Pterodactyl Panel 2.0 development builds (SDK
-> `2.0.0-beta.4`). Back up the panel database before upgrades.
+> **Beta.** PteroRelay needs Pterodactyl Panel 2.0: release **v2.0.0-beta.2** or newer, or a
+> build of the `2.0-develop` branch. Both are tested on every release. Back up the panel
+> database before upgrades.
 
 ---
 
@@ -445,7 +446,7 @@ a stable `pterorelay-discord.zip` asset. The package contains what the panel's o
 
 | | Supported |
 | --- | --- |
-| Panel | Pterodactyl Panel 2.0 with extensions (tested on `2.0-develop`, SDK `2.0.0-beta.4`) |
+| Panel | Pterodactyl Panel 2.0: v2.0.0-beta.2 or newer, or `2.0-develop` (both tested on every release) |
 | Wings | The Wings release that ships with Panel 2.0 |
 | PHP | 8.3 or newer (the panel's requirement) |
 | Agent | Python 3.11 (the PteroRelay Agent egg uses `ghcr.io/parkervcp/yolks:python_3.11`) |

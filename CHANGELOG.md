@@ -8,6 +8,7 @@ agent updates itself to the extension's version.
 ## 0.6.0 (beta)
 
 - **Modpack version** field in the server's Discord tab, shown by `/info`.
+- Tested against the official **Panel v2.0.0-beta.2** release as well as `2.0-develop`.
 - **PHP security warning** in Admin → PteroRelay when the panel runs a PHP version with
   the October 2026 remote code execution flaws (CVE-2026-109618 and CVE-2026-109619,
   fixed in 8.2.35, 8.3.36, 8.4.27 and 8.5.12), and a reminder to set

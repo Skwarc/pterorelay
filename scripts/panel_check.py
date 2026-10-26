@@ -8,6 +8,7 @@ Runs in Docker, inside the full panel checkout in ``.panel``:
   harness and a MySQL container.
 
 Usage: python scripts/panel_check.py [--phpstan-only | --tests-only] [--update-panel]
+                                     [--panel-ref 2.0-develop | v2.0.0-beta.2 | latest-release]
 """
 
 from __future__ import annotations
@@ -41,14 +42,31 @@ def docker_ok(*command: str) -> bool:
     return subprocess.run(["docker", *command], capture_output=True).returncode == 0
 
 
-def ensure_panel(update: bool) -> None:
-    """A full (not sparse) checkout of the panel, with its Composer dependencies."""
+PANEL_REPOSITORY = "https://github.com/pterodactyl/panel"
+
+
+def latest_release() -> str:
+    """The newest 2.x release tag of the panel (betas included), e.g. v2.0.0-beta.2."""
+    out = subprocess.run(["git", "-c", "versionsort.suffix=-", "ls-remote", "--tags", "--refs", "--sort=-v:refname",
+                          PANEL_REPOSITORY, "v2.*"], check=True, capture_output=True, text=True).stdout
+    for line in out.splitlines():
+        return line.rsplit("refs/tags/", 1)[1]
+    raise SystemExit("The panel has no 2.x release yet.")
+
+
+def ensure_panel(update: bool, ref: str | None = None) -> None:
+    """A full (not sparse) checkout of the panel at `ref` (default: the 2.0 branch), with its dependencies."""
+    if ref == "latest-release":
+        ref = latest_release()
     if not (PANEL / ".git").is_dir():
-        run(["git", "clone", "--filter=blob:none", "--branch", PANEL_BRANCH,
-             "https://github.com/pterodactyl/panel", str(PANEL)])
-    elif update:
-        run(["git", "-C", str(PANEL), "fetch", "--depth", "1", "origin", PANEL_BRANCH])
+        run(["git", "clone", "--filter=blob:none", "--branch", ref or PANEL_BRANCH, PANEL_REPOSITORY, str(PANEL)])
+        update = True
+    elif update or ref:
+        run(["git", "-C", str(PANEL), "fetch", "--depth", "1", "origin", ref or PANEL_BRANCH])
         run(["git", "-C", str(PANEL), "checkout", "-q", "FETCH_HEAD"])
+        update = True
+    print("Panel:", subprocess.run(["git", "-C", str(PANEL), "describe", "--tags", "--always"],
+                                   capture_output=True, text=True).stdout.strip(), flush=True)
     if (PANEL / ".git" / "info" / "sparse-checkout").is_file() and \
             subprocess.run(["git", "-C", str(PANEL), "config", "core.sparseCheckout"],
                            capture_output=True, text=True).stdout.strip() == "true":
@@ -126,11 +144,12 @@ def main() -> int:
     parser.add_argument("--phpstan-only", action="store_true")
     parser.add_argument("--tests-only", action="store_true")
     parser.add_argument("--update-panel", action="store_true", help="fetch the latest panel first")
+    parser.add_argument("--panel-ref", help="panel branch or tag to check against, or latest-release")
     args = parser.parse_args()
     if shutil.which("docker") is None or not docker_ok("info"):
         raise SystemExit("Docker is not running")
     try:
-        ensure_panel(args.update_panel)
+        ensure_panel(args.update_panel, args.panel_ref)
         if not args.tests_only:
             phpstan()
         if not args.phpstan_only:

@@ -2,7 +2,7 @@
   "$schema": "./node_modules/@pterodactyl/sdk/manifest.schema.json",
   "id": "pterorelay-discord",
   "name": "PteroRelay Discord",
-  "version": "0.6.0-beta.8",
+  "version": "0.6.0-beta.9",
   "description": "Discord management and game integration for Pterodactyl servers.",
   "author": "PteroRelay contributors",
   "requires": {
