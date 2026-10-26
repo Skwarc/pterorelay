@@ -9,4 +9,6 @@ RUN echo "memory_limit=-1" > /usr/local/etc/php/conf.d/memory.ini \
     && mkdir -p /etc/mysql/conf.d && printf '[client]\nskip-ssl\n' > /etc/mysql/conf.d/ci.cnf
 # The mounted checkout belongs to another user in CI; Composer reads its version from git.
 RUN git config --global --add safe.directory '*'
+# Never test on a PHP with the October 2026 remote code execution flaws (CVE-2026-109618/109619).
+RUN php -r 'exit(version_compare(PHP_VERSION, "8.4.27", "<") ? 1 : 0);' || (echo "PHP "$(php -r 'echo PHP_VERSION;')" is vulnerable; pull a newer php:8.4-cli" && exit 1)
 WORKDIR /panel

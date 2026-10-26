@@ -433,3 +433,17 @@ test('the mod download link is saved, must be https and reaches the agent', func
     $this->actingAs($owner)->putJson($url, integration(['mods_url' => '']))->assertNoContent();
     expect(DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('mods_url'))->toBeNull();
 });
+
+test('the modpack version is saved and reaches the agent', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    $binding = Support::bind($server, $this->guild);
+    $url = settingsUrl($server, "/{$binding}/integration");
+
+    $this->actingAs($owner)->putJson($url, integration(['modpack_version' => ' ATM9 0.3.2 ']))->assertNoContent();
+    expect(DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('modpack_version'))->toBe('ATM9 0.3.2');
+
+    $this->actingAs($owner)->putJson($url, integration(['modpack_version' => "bad\nversion"]))->assertUnprocessable();
+    $this->actingAs($owner)->putJson($url, integration(['modpack_version' => str_repeat('x', 101)]))->assertUnprocessable();
+    $this->actingAs($owner)->putJson($url, integration(['modpack_version' => '']))->assertNoContent();
+    expect(DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('modpack_version'))->toBeNull();
+});

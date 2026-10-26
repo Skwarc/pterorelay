@@ -110,8 +110,9 @@ If a step fails, the step list shows which one. The manual route is:
    server's start, stop and crash messages go (default: the Discord server's).
    Each game server needs its own **Chat channel**: a channel another server of the
    same Discord server already relays into is marked and cannot be picked. The
-   **Server address** (for example `play.example.com:25565`) and the optional **Mod download
-   link** (an https page such as a CurseForge or Modrinth modpack) are shown by `/info`.
+   **Server address** (for example `play.example.com:25565`), the optional **Mod download
+   link** (an https page such as a CurseForge or Modrinth modpack) and **Modpack version** are
+   shown by `/info`.
 6. To disconnect a Discord server, click **Unlink** next to its name; its roles and
    settings for this game server are deleted.
 
@@ -474,6 +475,10 @@ for 30 days in case it is invited back, then deleted with everything linked to t
 ## Security
 
 Report vulnerabilities privately; see [SECURITY.md](SECURITY.md).
+
+PteroRelay runs inside the panel, so the panel's PHP must be patched. Admin → PteroRelay
+warns when it runs a PHP release with known critical flaws (currently CVE-2026-109618 and
+CVE-2026-109619: update to 8.2.35, 8.3.36, 8.4.27, 8.5.12 or newer and restart PHP-FPM).
 
 
 - Never commit `.env*` files, the bot token or agent secrets.

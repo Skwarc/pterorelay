@@ -14,6 +14,7 @@ type GuildInfo = { id: number; name: string; integration_channel_id: string | nu
 export type OverviewInfo = {
     agents: AgentInfo[]; guilds: GuildInfo[]; extension_version: string; invite_permissions: number;
     relayed_servers: number; linked_servers: number; servers?: Record<string, { name: string; identifier: string }>;
+    php?: { version: string; vulnerable: boolean; fixed_in: string | null; upload_progress: boolean };
 };
 type Updates = { current: string; configured: boolean; latest?: { version: string; url: string } | null; update_available?: boolean };
 type Check = { label: string; ok: boolean | null; detail: React.ReactNode };
@@ -41,6 +42,23 @@ export function UpdateBanner() {
         PteroRelay <b>{updates.latest.version}</b> is available (you have {updates.current}).{' '}
         <a className={link} href={updates.latest.url} target="_blank" rel="noreferrer">Release notes and download</a>.
         After installing it, restart the PteroRelay Agent server so the agent updates too.
+    </div>;
+}
+
+/** Security warnings about the PHP that runs the panel (not about PteroRelay itself). */
+export function PhpAdvisory({ php }: { php: OverviewInfo['php'] }) {
+    if (!php || (!php.vulnerable && !php.upload_progress)) return null;
+    return <div className="prelay:grid prelay:gap-2 prelay:rounded-lg prelay:border prelay:border-destructive prelay:bg-destructive/10 prelay:p-4 prelay:text-sm prelay:text-foreground" role="alert">
+        {php.vulnerable && <p>
+            <b>⚠ This panel runs PHP {php.version}, which has critical remote code execution flaws</b> (CVE-2026-109618 and
+            CVE-2026-109619, &quot;PHP2Shell&quot;, exploited in the wild). Update PHP to {php.fixed_in ?? 'a supported, patched release (8.2.35, 8.3.36, 8.4.27 or 8.5.12)'} or
+            newer and restart PHP-FPM. No configuration change protects against them.{' '}
+            <a className={link} href="https://watchtowr.com/intelligence/php-cve-2026-109618-faq/" target="_blank" rel="noreferrer">Details</a>
+        </p>}
+        {php.upload_progress && <p>
+            <b>Set <code>session.upload_progress.enabled = 0</code></b> in the panel&apos;s php.ini and restart PHP-FPM: PHP recommends it
+            against CVE-2026-115560, which has no fix yet. The panel does not use upload progress.
+        </p>}
     </div>;
 }
 

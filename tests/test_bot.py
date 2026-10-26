@@ -301,3 +301,19 @@ class InfoModsTests(unittest.TestCase):
         self.assertEqual([(item.label, item.url) for item in view.children], [("Download mods", url)])
         self.assertIsNone(bot.info_view(None, "en"))
         self.assertNotIn("Mods", " ".join(field.name for field in bot.info_embed("S", "running", [], True, None, 0, "en").fields))
+
+
+class InfoModpackVersionTests(unittest.TestCase):
+    def test_modpack_version_from_the_panel(self):
+        bindings = {"aaaa1111": [{"discord_guild_id": "2", "modpack_version": "other"},
+                                 {"discord_guild_id": "1", "modpack_version": " ATM9 0.3.2 "}],
+                    "bbbb2222": [{"discord_guild_id": "1", "modpack_version": None}]}
+        with patch.object(bot, "AGENT_BINDINGS", bindings):
+            self.assertEqual(bot.server_modpack_version("aaaa1111", 1), "ATM9 0.3.2")
+            self.assertIsNone(bot.server_modpack_version("bbbb2222", 1))
+
+    def test_embed_shows_the_modpack_version_only_when_set(self):
+        with_version = bot.info_embed("S", "running", [], True, None, 0, "en", None, "ATM9 0.3.2")
+        self.assertIn(("🏷️ Modpack version", "ATM9 0.3.2"), [(f.name, f.value) for f in with_version.fields])
+        without = bot.info_embed("S", "running", [], True, None, 0, "en")
+        self.assertNotIn("Modpack", " ".join(f.name for f in without.fields))

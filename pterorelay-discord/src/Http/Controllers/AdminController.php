@@ -31,6 +31,7 @@ final class AdminController
         return new JsonResponse([
             'servers' => $servers,
             'extension_version' => self::extensionVersion(),
+            'php' => self::phpAdvisory(PHP_VERSION, (bool) filter_var(ini_get('session.upload_progress.enabled'), FILTER_VALIDATE_BOOL)),
             'invite_permissions' => self::INVITE_PERMISSIONS,
             'relayed_servers' => DB::table('ext_pterorelay_server_guild')->where('enabled', true)->where('chat_enabled', true)->count(),
             'linked_servers' => DB::table('ext_pterorelay_server_guild')->where('enabled', true)->count(),
@@ -110,6 +111,25 @@ final class AdminController
         return 'https://discord.com/oauth2/authorize?'.http_build_query([
             'client_id' => $applicationId, 'scope' => 'bot applications.commands', 'permissions' => self::INVITE_PERMISSIONS,
         ]);
+    }
+
+    /** First patched release per PHP branch for CVE-2026-109618 and CVE-2026-109619 ("PHP2Shell", October 2026). */
+    public const PHP_PATCHED = ['8.2' => '8.2.35', '8.3' => '8.3.36', '8.4' => '8.4.27', '8.5' => '8.5.12'];
+
+    /**
+     * Whether the PHP that runs the panel has the critical PHP2Shell flaws, and whether the
+     * CVE-2026-115560 mitigation (session.upload_progress.enabled = 0) is missing.
+     *
+     * @return array{version: string, vulnerable: bool, fixed_in: string|null, upload_progress: bool}
+     */
+    public static function phpAdvisory(string $version, bool $uploadProgress): array
+    {
+        $branch = implode('.', array_slice(explode('.', $version), 0, 2));
+        $fixedIn = self::PHP_PATCHED[$branch] ?? null;
+        // Branches older than 8.2 get no official fix; newer ones than listed are patched.
+        $vulnerable = $fixedIn !== null ? version_compare($version, $fixedIn, '<') : version_compare($version, '8.2', '<');
+
+        return ['version' => $version, 'vulnerable' => $vulnerable, 'fixed_in' => $fixedIn, 'upload_progress' => $uploadProgress];
     }
 
     public static function extensionVersion(): string

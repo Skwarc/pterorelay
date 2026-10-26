@@ -7,6 +7,11 @@ agent updates itself to the extension's version.
 
 ## 0.6.0 (beta)
 
+- **Modpack version** field in the server's Discord tab, shown by `/info`.
+- **PHP security warning** in Admin → PteroRelay when the panel runs a PHP version with
+  the October 2026 remote code execution flaws (CVE-2026-109618 and CVE-2026-109619,
+  fixed in 8.2.35, 8.3.36, 8.4.27 and 8.5.12), and a reminder to set
+  `session.upload_progress.enabled = 0` against CVE-2026-115560.
 - **`/info`** shows a server's state, the players online, uptime and its address. In a
   server's own chat channel it needs no server choice and works for everyone there.
 - **Server address** and **Mod download link** fields in the server's Discord tab, shown by

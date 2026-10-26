@@ -1,7 +1,7 @@
 import { useEffect, useState, type ChangeEvent } from 'react';
 import { Button, Input, PageContentBlock, Spinner, http, httpErrorToHuman, toast, useExtensionTranslation } from '@pterodactyl/sdk';
 import AgentDeploy from '../AgentDeploy';
-import { Diagnostics, SetupChecklist, UpdateBanner, type AgentInfo, type OverviewInfo } from '../SetupChecklist';
+import { Diagnostics, PhpAdvisory, SetupChecklist, UpdateBanner, type AgentInfo, type OverviewInfo } from '../SetupChecklist';
 
 type Agent = AgentInfo;
 type Channel = { discord_id: string; name: string; can_send: boolean; can_webhook: boolean };
@@ -52,6 +52,7 @@ export default function AdminSettings() {
     };
     return <PageContentBlock title="PteroRelay Discord">
         <div className="prelay:grid prelay:gap-6">
+            {overview && <PhpAdvisory php={overview.php} />}
             <UpdateBanner />
             {overview && <SetupChecklist overview={overview} />}
             {overview && overview.agents.length > 0 && <Diagnostics overview={overview} />}

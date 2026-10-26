@@ -1197,6 +1197,16 @@ def server_address(server_id: str, guild_id: object) -> str | None:
     return None
 
 
+def server_modpack_version(server_id: str, guild_id: object) -> str | None:
+    """The modpack version set in the panel, preferring this Discord server's binding."""
+    bindings = sorted(AGENT_BINDINGS.get(server_id, []), key=lambda b: b.get("discord_guild_id") != str(guild_id))
+    for binding in bindings:
+        version = str(binding.get("modpack_version") or "").strip()
+        if version:
+            return version[:100]
+    return None
+
+
 def server_mods_url(server_id: str, guild_id: object) -> str | None:
     """The mod download link set in the panel (https only), preferring this Discord server's binding."""
     bindings = sorted(AGENT_BINDINGS.get(server_id, []), key=lambda b: b.get("discord_guild_id") != str(guild_id))
@@ -1217,7 +1227,8 @@ def info_view(mods_url: str | None, locale: str) -> discord.ui.View | None:
 
 
 def info_embed(name: str, state: str | None, players: list[str] | None, known: bool,
-               address: str | None, uptime_seconds: float, locale: str, mods_url: str | None = None) -> discord.Embed:
+               address: str | None, uptime_seconds: float, locale: str, mods_url: str | None = None,
+               version: str | None = None) -> discord.Embed:
     """Shareable summary of one server: state, players, address, mods and uptime."""
     state_key = state if state in ("running", "offline", "starting", "stopping") else "unknown"
     embed = discord.Embed(
@@ -1241,6 +1252,9 @@ def info_embed(name: str, state: str | None, players: list[str] | None, known: b
     embed.add_field(name=f"👥 {players_name}", value=players_value, inline=True)
 
     embed.add_field(name=f"⏱️ {translate('info.uptime', locale)}", value=format_uptime(uptime_seconds), inline=True)
+    if version:
+        embed.add_field(name=f"🏷️ {translate('info.modpack_version', locale)}",
+                        value=discord.utils.escape_markdown(version.replace("`", ""))[:100], inline=True)
     clean = (address or "").replace("`", "").strip()
     embed.add_field(name=f"🌐 {translate('info.address', locale)}",
                     value=f"`{clean[:200]}`" if clean else translate("info.address_missing", locale), inline=False)
@@ -1305,7 +1319,8 @@ async def info_cmd(interaction: discord.Interaction, server: str | None = None):
     known = bool(tracker is not None and tracker.known)
     mods_url = server_mods_url(server, interaction.guild_id)
     embed = info_embed(name, state, players, known, server_address(server, interaction.guild_id),
-                       get_current_uptime(load_config(), server), locale, mods_url)
+                       get_current_uptime(load_config(), server), locale, mods_url,
+                       server_modpack_version(server, interaction.guild_id))
     view = info_view(mods_url, locale)
     extra = {"view": view} if view is not None else {}
     if deferred:

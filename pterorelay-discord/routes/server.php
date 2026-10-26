@@ -253,6 +253,7 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
         'notification_channel_id' => ['sometimes', 'nullable', 'string', 'regex:/^\d{1,20}$/'],
         // Host name, IPv4 or [IPv6], with an optional port: what players type to connect.
         'mods_url' => ['sometimes', 'nullable', 'string', 'max:500', 'url:https'],
+        'modpack_version' => ['sometimes', 'nullable', 'string', 'max:100', 'not_regex:/[\x00-\x1f\x7f`]/'],
         'address' => ['sometimes', 'nullable', 'string', 'max:255', 'regex:/^(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9](?:[A-Za-z0-9.-]{0,253}[A-Za-z0-9])?)(:\d{1,5})?$/'],
         'event_colors' => ['present', 'nullable', 'array:join,leave,death,advancement,broadcast,server'],
         'event_colors.*' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
@@ -355,6 +356,7 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
         ...(array_key_exists('notification_channel_id', $data) ? ['notification_channel_id' => $data['notification_channel_id']] : []),
         ...(array_key_exists('address', $data) ? ['address' => trim((string) $data['address']) === '' ? null : trim((string) $data['address'])] : []),
         ...(array_key_exists('mods_url', $data) ? ['mods_url' => trim((string) $data['mods_url']) === '' ? null : trim((string) $data['mods_url'])] : []),
+        ...(array_key_exists('modpack_version', $data) ? ['modpack_version' => trim((string) $data['modpack_version']) === '' ? null : trim((string) $data['modpack_version'])] : []),
     ]);
 
     return response()->noContent();
