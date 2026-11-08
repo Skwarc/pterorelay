@@ -29,7 +29,8 @@ class ConfigTests(unittest.TestCase):
             with patch.object(bot, "CONFIG_FILE", str(path)):
                 config = bot.load_config()
 
-        self.assertEqual(config, {"status_messages": {}, "uptime_data": {"4cb49f72": {"total_seconds": 5}}})
+        self.assertEqual(config, {"status_messages": {}, "uptime_data": {"4cb49f72": {"total_seconds": 5}},
+                                  "announced_versions": {}})
 
     def test_invalid_json_has_clear_error(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -317,3 +318,67 @@ class InfoModpackVersionTests(unittest.TestCase):
         self.assertIn(("🏷️ Modpack version", "ATM9 0.3.2"), [(f.name, f.value) for f in with_version.fields])
         without = bot.info_embed("S", "running", [], True, None, 0, "en")
         self.assertNotIn("Modpack", " ".join(f.name for f in without.fields))
+
+    def test_show_version_off_hides_the_version(self):
+        bindings = {"aaaa1111": [{"discord_guild_id": "1", "modpack_version": "1.0", "show_version": False},
+                                 {"discord_guild_id": "2", "modpack_version": "1.0"}],
+                    "bbbb2222": [{"discord_guild_id": "2", "modpack_version": "2.0", "show_version": False},
+                                 {"discord_guild_id": "3", "modpack_version": "2.1"}],
+                    "cccc3333": [{"discord_guild_id": "1", "modpack_version": "3.0", "show_version": True}]}
+        with patch.object(bot, "AGENT_BINDINGS", bindings):
+            self.assertIsNone(bot.server_modpack_version("aaaa1111", 1))
+            self.assertEqual(bot.server_modpack_version("aaaa1111", 2), "1.0")
+            self.assertEqual(bot.server_modpack_version("bbbb2222", 1), "2.1")
+            self.assertEqual(bot.server_modpack_version("cccc3333", 1), "3.0")
+
+
+class VersionAnnouncementTests(unittest.TestCase):
+    @staticmethod
+    def binding(binding_id, version, announce=True, **extra):
+        return {"id": binding_id, "modpack_version": version, "announce_updates": announce, **extra}
+
+    def test_first_sight_is_recorded_silently(self):
+        to_post, state = bot.version_announcements({"a": [self.binding(1, "1.0")]}, {})
+        self.assertEqual(to_post, [])
+        self.assertEqual(state, {"1": "1.0"})
+
+    def test_no_change_posts_nothing(self):
+        to_post, state = bot.version_announcements({"a": [self.binding(1, " 1.0 ")]}, {"1": "1.0"})
+        self.assertEqual(to_post, [])
+        self.assertEqual(state, {"1": "1.0"})
+
+    def test_change_is_announced(self):
+        binding = self.binding(1, "1.1")
+        to_post, state = bot.version_announcements({"a": [binding]}, {"1": "1.0"})
+        self.assertEqual(to_post, [("a", binding, "1.0", "1.1")])
+        self.assertEqual(state, {"1": "1.1"})
+
+    def test_announce_off_empty_version_and_removed_bindings_are_dropped(self):
+        bindings = {"a": [self.binding(1, "1.1", announce=False), self.binding(2, "")]}
+        to_post, state = bot.version_announcements(bindings, {"1": "1.0", "2": "2.0", "3": "3.0"})
+        self.assertEqual(to_post, [])
+        self.assertEqual(state, {})
+        # Re-enabling afterwards is a first sight again: no stale announcement.
+        to_post, state = bot.version_announcements({"a": [self.binding(1, "1.2")]}, state)
+        self.assertEqual((to_post, state), ([], {"1": "1.2"}))
+
+    def test_message_pings_only_the_configured_role(self):
+        content, mentions, view = bot.version_announcement_message(
+            "Sur*vival*", "1.0`", "1.1", "en", "https://modrinth.com/modpack/x", "123456", "999")
+        self.assertTrue(content.startswith("<@&123456> 📦 **Sur\*vival\*** modpack updated: `1.0` → `1.1`"))
+        self.assertFalse(mentions.everyone)
+        self.assertFalse(mentions.users)
+        self.assertEqual([role.id for role in mentions.roles], [123456])
+        self.assertEqual([(item.label, item.url) for item in view.children],
+                         [("Download the modpack", "https://modrinth.com/modpack/x")])
+
+    def test_message_without_role_pings_nobody(self):
+        for role in (None, "", "abc", "999"):  # 999 is the guild ID, i.e. @everyone
+            content, mentions, view = bot.version_announcement_message(
+                "S", "1", "2", "sl", "http://example.com", role, "999")
+            self.assertNotIn("<@&", content)
+            self.assertFalse(mentions.everyone)
+            self.assertFalse(mentions.users)
+            self.assertFalse(mentions.roles)
+            self.assertIsNone(view)
+            self.assertIn("posodobljen", content)

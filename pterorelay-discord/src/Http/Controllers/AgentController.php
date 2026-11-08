@@ -183,6 +183,7 @@ final readonly class AgentController
                 DB::raw('COALESCE(binding.chat_channel_id, guild.integration_channel_id) as chat_channel_id'),
                 DB::raw('COALESCE(binding.notification_channel_id, guild.notification_channel_id) as notification_channel_id'),
                 'binding.address', 'binding.mods_url', 'binding.modpack_version', 'servers.uuid', 'servers.name',
+                'binding.show_version', 'binding.announce_updates', 'binding.update_role_id',
             ])->get()->map(function (object $binding): object {
                 // Short identifier is the UUID's first segment (uuidShort); derived to avoid relying on the column name.
                 $binding->identifier = substr((string) $binding->uuid, 0, 8);
@@ -192,6 +193,8 @@ final readonly class AgentController
                 $binding->event_colors = self::decodeJson($binding->event_colors);
                 $binding->disabled_features = self::decodeJson($binding->disabled_features) ?? [];
                 $binding->chat_enabled = (bool) $binding->chat_enabled;
+                $binding->show_version = (bool) $binding->show_version;
+                $binding->announce_updates = (bool) $binding->announce_updates;
 
                 return $binding;
             });

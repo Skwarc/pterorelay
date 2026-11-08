@@ -447,3 +447,47 @@ test('the modpack version is saved and reaches the agent', function (): void {
     $this->actingAs($owner)->putJson($url, integration(['modpack_version' => '']))->assertNoContent();
     expect(DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('modpack_version'))->toBeNull();
 });
+
+test('a new binding shows the version and does not announce updates', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    $binding = Support::bind($server, $this->guild);
+
+    $row = DB::table('ext_pterorelay_server_guild')->where('id', $binding)->first();
+    expect((bool) $row->show_version)->toBeTrue()->and((bool) $row->announce_updates)->toBeFalse()->and($row->update_role_id)->toBeNull();
+
+    $response = $this->actingAs($owner)->getJson(settingsUrl($server))->assertOk();
+    expect($response->json('bindings.0.show_version'))->toBeTrue()->and($response->json('bindings.0.announce_updates'))->toBeFalse();
+});
+
+test('the owner saves the modpack version options', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    $binding = Support::bind($server, $this->guild);
+    $url = settingsUrl($server, "/{$binding}/integration");
+
+    $this->actingAs($owner)->putJson($url, integration([
+        'show_version' => false, 'announce_updates' => true, 'update_role_id' => '333333333333333333',
+    ]))->assertNoContent();
+    $row = DB::table('ext_pterorelay_server_guild')->where('id', $binding)->first();
+    expect((bool) $row->show_version)->toBeFalse()->and((bool) $row->announce_updates)->toBeTrue()
+        ->and($row->update_role_id)->toBe('333333333333333333');
+
+    // Fields left out are kept.
+    $this->actingAs($owner)->putJson($url, integration())->assertNoContent();
+    expect(DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('update_role_id'))->toBe('333333333333333333');
+
+    $this->actingAs($owner)->putJson($url, integration(['update_role_id' => null]))->assertNoContent();
+    expect(DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('update_role_id'))->toBeNull();
+});
+
+test('the update ping role must be a role of this Discord server other than @everyone', function (): void {
+    [$owner, $server] = $this->generateTestAccount();
+    $binding = Support::bind($server, $this->guild);
+    $url = settingsUrl($server, "/{$binding}/integration");
+    $otherGuild = Support::guild($this->agent, '555555555555555555');
+    Support::role($otherGuild, '666666666666666666', 'Elsewhere');
+
+    $this->actingAs($owner)->putJson($url, integration(['announce_updates' => true, 'update_role_id' => '666666666666666666']))->assertUnprocessable();
+    $this->actingAs($owner)->putJson($url, integration(['announce_updates' => true, 'update_role_id' => '111111111111111111']))->assertUnprocessable();
+    $this->actingAs($owner)->putJson($url, integration(['update_role_id' => 'abc']))->assertUnprocessable();
+    expect(DB::table('ext_pterorelay_server_guild')->where('id', $binding)->value('update_role_id'))->toBeNull();
+});

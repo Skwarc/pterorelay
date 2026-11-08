@@ -113,7 +113,9 @@ If a step fails, the step list shows which one. The manual route is:
    same Discord server already relays into is marked and cannot be picked. The
    **Server address** (for example `play.example.com:25565`), the optional **Mod download
    link** (an https page such as a CurseForge or Modrinth modpack) and **Modpack version** are
-   shown by `/info`.
+   shown by `/info`. Untick **Show in /info** to hide the version, or tick **Announce version
+   changes** to have the bot post each new version in this server's chat channel, optionally
+   pinging a **Ping role**.
 6. To disconnect a Discord server, click **Unlink** next to its name; its roles and
    settings for this game server are deleted.
 
@@ -197,6 +199,10 @@ when the Message Content intent is off.
 Each command only shows the servers your Discord roles may view. The bot's own
 status ("Watching 3 servers · 2 online · 5 players") is a total with no server
 names, because every Discord server the bot is in can see it.
+
+Modpack version changes can be announced in the server's chat channel (or its
+notification channel), optionally pinging one role; turn this on, and hide the
+version from `/info` if you like, in the panel's **Discord** tab.
 
 Servers are linked, and roles given access, in the panel; the bot has no setup
 commands. To limit the channels where members can use the bot, use Discord's

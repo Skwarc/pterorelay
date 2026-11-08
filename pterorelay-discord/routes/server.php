@@ -143,6 +143,8 @@ Route::get('/settings', function (Request $request, Server $server) use ($decode
         $binding->event_colors = $decode($binding->event_colors);
         $binding->disabled_features = $decode($binding->disabled_features) ?? [];
         $binding->chat_enabled = (bool) $binding->chat_enabled;
+        $binding->show_version = (bool) $binding->show_version;
+        $binding->announce_updates = (bool) $binding->announce_updates;
         // Only a hint for the Game dropdown; nothing is stored until the user saves the integration.
         $binding->suggested_adapter = $binding->game_adapter === null && is_array($binding->adapters)
             ? $suggestAdapter($binding->adapters, $server) : null;
@@ -242,7 +244,7 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
         ->join('ext_pterorelay_guilds as guild', 'guild.id', '=', 'binding.guild_id')
         ->join('ext_pterorelay_agents as agent', 'agent.id', '=', 'guild.agent_id')
         ->where('binding.id', $bindingId)->where('binding.server_id', $server->id)
-        ->first(['binding.id', 'binding.guild_id', 'binding.adapter_config', 'binding.game_adapter', 'binding.chat_enabled', 'guild.integration_channel_id', 'agent.adapters']);
+        ->first(['binding.id', 'binding.guild_id', 'binding.adapter_config', 'binding.game_adapter', 'binding.chat_enabled', 'guild.integration_channel_id', 'guild.discord_id as guild_discord_id', 'agent.adapters']);
     abort_if($binding === null, 404);
 
     $pattern = ['nullable', 'string', 'max:500'];
@@ -254,6 +256,9 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
         // Host name, IPv4 or [IPv6], with an optional port: what players type to connect.
         'mods_url' => ['sometimes', 'nullable', 'string', 'max:500', 'url:https'],
         'modpack_version' => ['sometimes', 'nullable', 'string', 'max:100', 'not_regex:/[\x00-\x1f\x7f`]/'],
+        'show_version' => ['sometimes', 'boolean'],
+        'announce_updates' => ['sometimes', 'boolean'],
+        'update_role_id' => ['sometimes', 'nullable', 'string', 'regex:/^\d{1,20}$/'],
         'address' => ['sometimes', 'nullable', 'string', 'max:255', 'regex:/^(\[[0-9A-Fa-f:.]+\]|[A-Za-z0-9](?:[A-Za-z0-9.-]{0,253}[A-Za-z0-9])?)(:\d{1,5})?$/'],
         'event_colors' => ['present', 'nullable', 'array:join,leave,death,advancement,broadcast,server'],
         'event_colors.*' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
@@ -301,6 +306,18 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
             ->where('guild_id', $binding->guild_id)->where('discord_id', $data['notification_channel_id'])->exists(),
         422,
         'The notification channel does not belong to this Discord server.',
+    );
+    // The update announcement pings this role; @everyone would ping the whole Discord server.
+    abort_if(
+        ($data['update_role_id'] ?? null) !== null && (string) $data['update_role_id'] === (string) $binding->guild_discord_id,
+        422,
+        'Update announcements cannot ping @everyone. Pick a role or no ping.',
+    );
+    abort_if(
+        ($data['update_role_id'] ?? null) !== null && !DB::table('ext_pterorelay_discord_roles')
+            ->where('guild_id', $binding->guild_id)->where('discord_id', $data['update_role_id'])->exists(),
+        422,
+        'The update ping role does not belong to this Discord server.',
     );
 
     // Every game server relays into its own channel. The other server is not named: it may belong
@@ -357,6 +374,9 @@ Route::put('/settings/{bindingId}/integration', function (Request $request, Serv
         ...(array_key_exists('address', $data) ? ['address' => trim((string) $data['address']) === '' ? null : trim((string) $data['address'])] : []),
         ...(array_key_exists('mods_url', $data) ? ['mods_url' => trim((string) $data['mods_url']) === '' ? null : trim((string) $data['mods_url'])] : []),
         ...(array_key_exists('modpack_version', $data) ? ['modpack_version' => trim((string) $data['modpack_version']) === '' ? null : trim((string) $data['modpack_version'])] : []),
+        ...(array_key_exists('show_version', $data) ? ['show_version' => (bool) $data['show_version']] : []),
+        ...(array_key_exists('announce_updates', $data) ? ['announce_updates' => (bool) $data['announce_updates']] : []),
+        ...(array_key_exists('update_role_id', $data) ? ['update_role_id' => $data['update_role_id']] : []),
     ]);
 
     return response()->noContent();

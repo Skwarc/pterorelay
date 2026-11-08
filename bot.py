@@ -74,11 +74,13 @@ AGENT_SERVER_UUIDS: dict[str, str] = {}
 AGENT_SERVER_NAMES: dict[str, str] = {}
 AGENT_GUILDS: dict[str, dict] = {}
 
-# Local state of the agent: recorded uptime and the live status embeds it keeps updated.
-# Everything else (servers, roles, channels) comes from the panel.
+# Local state of the agent: recorded uptime, the live status embeds it keeps updated and the
+# last modpack version announced per binding. Everything else (servers, roles, channels) comes
+# from the panel.
 DEFAULT_CONFIG = {
     "status_messages": {},
     "uptime_data": {},
+    "announced_versions": {},
 }
 
 def load_config():
@@ -779,6 +781,93 @@ async def notify_state_transition(server_id: str, old_state: str, new_state: str
                 logger.exception("Could not deliver state notification for %s", server_id)
 
 
+def _binding_flag(binding: dict, key: str) -> bool:
+    return binding.get(key) in (True, 1, "1")
+
+
+def version_announcements(bindings_by_server: dict[str, list[dict]], announced: dict
+                          ) -> tuple[list[tuple[str, dict, str, str]], dict[str, str]]:
+    """Modpack version changes to announce, and the new per-binding state of announced versions.
+
+    A binding seen for the first time (agent start, announcements just enabled) is only recorded;
+    bindings that are gone or have announcements off are dropped from the state."""
+    announced = announced if isinstance(announced, dict) else {}
+    to_post: list[tuple[str, dict, str, str]] = []
+    new_state: dict[str, str] = {}
+    for server_id, bindings in bindings_by_server.items():
+        for binding in bindings:
+            if not _binding_flag(binding, "announce_updates") or binding.get("id") is None:
+                continue
+            version = str(binding.get("modpack_version") or "").strip()[:100]
+            if not version:
+                continue
+            key = str(binding["id"])
+            previous = announced.get(key)
+            if isinstance(previous, str) and previous != version:
+                to_post.append((server_id, binding, previous, version))
+            new_state[key] = version
+    return to_post, new_state
+
+
+def _code_text(value: str) -> str:
+    """Text safe to put inside an inline code span."""
+    return str(value).replace("`", "").strip()[:100] or "?"
+
+
+def version_announcement_message(server: str, old: str, new: str, locale: str, mods_url: str | None = None,
+                                 role_id: object = None, guild_discord_id: object = None
+                                 ) -> tuple[str, discord.AllowedMentions, discord.ui.View | None]:
+    """Content, allowed mentions and optional download button of a modpack update announcement.
+
+    Only the configured role can be pinged; never @everyone (whose role ID is the guild's ID)."""
+    content = translate("updates.announcement", locale, {
+        "server": discord.utils.escape_markdown(str(server)).replace("`", ""),
+        "old": _code_text(old), "new": _code_text(new),
+    })
+    role = str(role_id or "").strip()
+    if role.isdigit() and role != str(guild_discord_id or "") and int(role) > 0:
+        content = f"<@&{role}> {content}"
+        mentions = discord.AllowedMentions(everyone=False, users=False, roles=[discord.Object(id=int(role))])
+    else:
+        mentions = discord.AllowedMentions.none()
+    url = https_mods_url(mods_url)
+    view = None
+    if url:
+        view = discord.ui.View(timeout=None)
+        view.add_item(discord.ui.Button(label=translate("updates.download", locale), url=url, emoji="📦"))
+    return content, mentions, view
+
+
+async def announce_version_changes() -> None:
+    """Records the bindings' modpack versions and posts an announcement for each change."""
+    async with CONFIG_LOCK:
+        config = load_config()
+        to_post, new_state = version_announcements(AGENT_BINDINGS, config.get("announced_versions"))
+        if new_state != config.get("announced_versions"):
+            config["announced_versions"] = new_state
+            save_config(config)
+    for server_id, binding, old, new in to_post:
+        guild = AGENT_GUILDS.get(str(binding.get("guild_id"))) or {}
+        # The game's own chat channel while it relays; otherwise the resolved chat channel may just be
+        # the Discord server's default, shared with other servers, so use the notification channel.
+        channel_id = (binding.get("chat_channel_id") if binding.get("chat_enabled") else None) or binding.get("notification_channel_id")
+        channel = bot.get_channel(int(channel_id)) if str(channel_id or "").isdigit() else None
+        if not isinstance(channel, discord.TextChannel):
+            logger.warning("No channel to announce the modpack update of %s (binding %s)", server_id, binding.get("id"))
+            continue
+        content, mentions, view = version_announcement_message(
+            configured_servers().get(server_id, server_id), old, new, guild.get("locale", DEFAULT_LOCALE),
+            binding.get("mods_url"), binding.get("update_role_id"), binding.get("discord_guild_id"),
+        )
+        try:
+            if view is None:
+                await channel.send(content, allowed_mentions=mentions)
+            else:
+                await channel.send(content, allowed_mentions=mentions, view=view)
+        except (discord.Forbidden, discord.NotFound, discord.HTTPException):
+            logger.exception("Could not announce the modpack update of %s", server_id)
+
+
 @tasks.loop(seconds=30)
 async def update_status_messages():
     config = load_config()
@@ -1198,12 +1287,27 @@ def server_address(server_id: str, guild_id: object) -> str | None:
 
 
 def server_modpack_version(server_id: str, guild_id: object) -> str | None:
-    """The modpack version set in the panel, preferring this Discord server's binding."""
+    """The modpack version set in the panel, preferring this Discord server's binding.
+
+    A binding with show_version off hides the version; when it is this Discord server's own
+    binding, no other binding's version is shown in its place."""
     bindings = sorted(AGENT_BINDINGS.get(server_id, []), key=lambda b: b.get("discord_guild_id") != str(guild_id))
     for binding in bindings:
+        if binding.get("show_version", True) in (False, 0, "0"):
+            if binding.get("discord_guild_id") == str(guild_id):
+                return None
+            continue
         version = str(binding.get("modpack_version") or "").strip()
         if version:
             return version[:100]
+    return None
+
+
+def https_mods_url(value: object) -> str | None:
+    """The mod download link when it is a plain https URL, else None."""
+    url = str(value or "").strip()
+    if url.startswith("https://") and len(url) <= 500 and not any(c in url for c in " <>`"):
+        return url
     return None
 
 
@@ -1211,8 +1315,8 @@ def server_mods_url(server_id: str, guild_id: object) -> str | None:
     """The mod download link set in the panel (https only), preferring this Discord server's binding."""
     bindings = sorted(AGENT_BINDINGS.get(server_id, []), key=lambda b: b.get("discord_guild_id") != str(guild_id))
     for binding in bindings:
-        url = str(binding.get("mods_url") or "").strip()
-        if url.startswith("https://") and len(url) <= 500 and not any(c in url for c in " <>`"):
+        url = https_mods_url(binding.get("mods_url"))
+        if url:
             return url
     return None
 
@@ -1625,6 +1729,11 @@ async def sync_agent_heartbeat():
     except Exception:
         HEARTBEAT_FAILURES += 1
         logger.exception("PteroRelay agent heartbeat failed")
+    else:
+        try:
+            await announce_version_changes()
+        except Exception:
+            logger.exception("Could not announce modpack version changes")
 
 
 for background_task in (

@@ -8,6 +8,10 @@ agent updates itself to the extension's version.
 ## 0.6.0 (beta)
 
 - **Modpack version** field in the server's Discord tab, shown by `/info`.
+- **Version options:** hide the modpack version from `/info`, and **announce version changes**
+  in the server's chat channel (or its notification channel while the relay is off), with an
+  optional role to ping. @everyone cannot be pinged; the first version the bot sees is
+  recorded, not announced.
 - Tested against the official **Panel v2.0.0-beta.2** release as well as `2.0-develop`.
 - **PHP security warning** in Admin → PteroRelay when the panel runs a PHP version with
   the October 2026 remote code execution flaws (CVE-2026-109618 and CVE-2026-109619,

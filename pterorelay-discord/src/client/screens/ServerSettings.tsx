@@ -32,6 +32,14 @@ type Binding = {
     address?: string | null;
     mods_url?: string | null;
     modpack_version?: string | null;
+    /** /info shows the modpack version (default on). */
+    show_version?: boolean;
+    /** Changing the modpack version is posted in the chat channel. */
+    announce_updates?: boolean;
+    /** Role pinged by the update announcement; null pings nobody. */
+    update_role_id?: string | null;
+    /** The Discord server's id, which is also its @everyone role id. */
+    discord_id?: string;
     /** Chat channels other relaying servers of this Discord server use; ids only. */
     used_channels?: string[];
     disabled_features: string[];
@@ -321,6 +329,11 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
     const [address, setAddress] = useState(binding.address ?? '');
     const [modsUrl, setModsUrl] = useState(binding.mods_url ?? '');
     const [modpackVersion, setModpackVersion] = useState(binding.modpack_version ?? '');
+    const [showVersion, setShowVersion] = useState(binding.show_version ?? true);
+    const [announceUpdates, setAnnounceUpdates] = useState(binding.announce_updates ?? false);
+    const [updateRoleId, setUpdateRoleId] = useState(binding.update_role_id ?? '');
+    // Same order as the roles table; @everyone and bot-managed roles cannot be pinged for updates.
+    const pingRoles = binding.available_roles.filter((role) => !role.managed && role.discord_id !== binding.discord_id && role.name !== '@everyone');
     const [colors, setColors] = useState<Record<EventKey, string>>({ ...EVENT_DEFAULTS, ...(binding.event_colors ?? {}) } as Record<EventKey, string>);
     const [form, setForm] = useState<Advanced>(() => advancedFrom(adapter?.defaults ?? {}, binding.adapter_config));
     const [showAdvanced, setShowAdvanced] = useState(false);
@@ -458,6 +471,9 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
                 address: address.trim() || null,
                 mods_url: modsUrl.trim() || null,
                 modpack_version: modpackVersion.trim() || null,
+                show_version: showVersion,
+                announce_updates: announceUpdates,
+                update_role_id: announceUpdates ? updateRoleId || null : binding.update_role_id ?? null,
                 event_colors: Object.keys(changedColors).length ? changedColors : null,
                 disabled_features: disabled,
                 // Without the agent's catalogue the preset defaults are unknown; keep stored overrides untouched.
@@ -542,6 +558,25 @@ function IntegrationEditor({ base, binding, canConsole, onSaved }: { base: strin
                 <input className={fieldClass} maxLength={100} placeholder="ATM9 0.3.2" value={modpackVersion} onChange={(event) => setModpackVersion(event.target.value)} />
                 <span className="prelay:text-xs prelay:text-muted-foreground">Optional. Shown by /info so players install the matching version.</span>
             </label>
+            <div className="prelay:grid prelay:gap-2 prelay:text-sm">
+                <label className="prelay:flex prelay:items-center prelay:gap-2">
+                    <input type="checkbox" checked={showVersion} onChange={(event) => setShowVersion(event.target.checked)} />
+                    Show in /info
+                </label>
+                <label className="prelay:grid prelay:gap-1">
+                    <span className="prelay:flex prelay:items-center prelay:gap-2">
+                        <input type="checkbox" checked={announceUpdates} onChange={(event) => setAnnounceUpdates(event.target.checked)} />
+                        Announce version changes
+                    </span>
+                    <span className="prelay:text-xs prelay:text-muted-foreground">When you change the modpack version, the bot posts it in this server's chat channel.</span>
+                </label>
+                {announceUpdates && <label className="prelay:grid prelay:gap-1">Ping role
+                    <select className={fieldClass} value={updateRoleId} onChange={(event) => setUpdateRoleId(event.target.value)}>
+                        <option value="">No ping</option>
+                        {pingRoles.map((role) => <option key={role.discord_id} value={role.discord_id}>{role.name.startsWith('@') ? role.name : `@${role.name}`}</option>)}
+                    </select>
+                </label>}
+            </div>
         </div>
         {adapter && <>
             {adapter.notes && <p className="prelay:text-sm prelay:text-muted-foreground">{adapter.notes}</p>}

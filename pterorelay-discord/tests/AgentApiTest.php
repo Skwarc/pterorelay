@@ -144,6 +144,21 @@ test('config includes the address players connect to', function (): void {
         ->and($servers[$other->uuid]['address'])->toBeNull();
 });
 
+test('config includes the modpack version options', function (): void {
+    [, $other] = $this->generateTestAccount();
+    Support::bind($this->server, $this->guild, ['show_version' => false, 'announce_updates' => true, 'update_role_id' => '333333333333333333']);
+    Support::bind($other, $this->guild);
+
+    $servers = collect(agentCall($this, $this->agent, 'GET', '/pterorelay-agent/config')->assertOk()->json('servers'))->keyBy('uuid');
+
+    expect($servers[$this->server->uuid]['show_version'])->toBeFalse()
+        ->and($servers[$this->server->uuid]['announce_updates'])->toBeTrue()
+        ->and($servers[$this->server->uuid]['update_role_id'])->toBe('333333333333333333')
+        ->and($servers[$other->uuid]['show_version'])->toBeTrue()
+        ->and($servers[$other->uuid]['announce_updates'])->toBeFalse()
+        ->and($servers[$other->uuid]['update_role_id'])->toBeNull();
+});
+
 test('chat sends the broadcast command and audits it', function (): void {
     Support::bind($this->server, $this->guild);
 
